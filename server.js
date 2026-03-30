@@ -164,3 +164,13 @@ app.get('/api/activity', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🚀 WorkTrack Server Running on port ${PORT}`);
 });
+
+const path = require('path');
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+app.get('/employee', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'employee.html'));
+});
