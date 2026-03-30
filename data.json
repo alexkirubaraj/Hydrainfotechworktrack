@@ -1,0 +1,219 @@
+{
+  "settings": {
+    "workHours": 8.5,
+    "startTime": "10:05",
+    "endTime": "18:30",
+    "graceMins": 10,
+    "breakMins": 45
+  },
+  "admins": [
+    {
+      "username": "admin1",
+      "password": "admin123",
+      "name": "Admin One"
+    },
+    {
+      "username": "admin2",
+      "password": "admin456",
+      "name": "Admin Two"
+    }
+  ],
+  "employees": [
+    {
+      "id": "Emp0001",
+      "name": "Alex",
+      "dept": "TA",
+      "email": "alexkirubaraj.d.r@gmail.com",
+      "password": "emp0001"
+    },
+    {
+      "id": "Emp0004",
+      "name": "Sunitha",
+      "dept": "TA",
+      "email": "sunitha@gmail.com",
+      "password": "emp0004"
+    },
+    {
+      "id": "Lead0001",
+      "name": "Vivin",
+      "dept": "Lead",
+      "email": "vivn@gmail.com",
+      "password": "vivin123"
+    }
+  ],
+  "attendance": [
+    {
+      "empId": "Emp0001",
+      "name": "Alex",
+      "date": "2026-03-28",
+      "sessions": [
+        {
+          "in": "16:58",
+          "out": "17:00",
+          "lateNote": null
+        },
+        {
+          "in": "17:00",
+          "out": "17:00",
+          "lateNote": null
+        }
+      ],
+      "totalWork": "0h 02m",
+      "status": "absent"
+    },
+    {
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "date": "2026-03-28",
+      "sessions": [
+        {
+          "in": "17:00",
+          "out": "17:01",
+          "lateNote": null
+        },
+        {
+          "in": "17:01",
+          "out": "17:01",
+          "lateNote": null
+        }
+      ],
+      "totalWork": "0h 01m",
+      "status": "absent"
+    },
+    {
+      "empId": "Emp0001",
+      "name": "Alex",
+      "date": "2026-03-30",
+      "sessions": [
+        {
+          "in": "10:02",
+          "out": null,
+          "lateNote": null
+        }
+      ],
+      "totalWork": "0h 00m",
+      "status": "present"
+    },
+    {
+      "empId": "Emp0001",
+      "name": "Alex",
+      "date": "2026-04-03",
+      "sessions": [],
+      "totalWork": "-",
+      "status": "holiday"
+    },
+    {
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "date": "2026-03-30",
+      "sessions": [
+        {
+          "in": "10:12",
+          "out": null,
+          "lateNote": null
+        }
+      ],
+      "totalWork": "0h 00m",
+      "status": "present"
+    }
+  ],
+  "leaveRequests": [
+    {
+      "id": "REQ1774845261556",
+      "empId": "Emp0001",
+      "name": "Alex",
+      "from": "2026-04-03",
+      "to": "2026-04-03",
+      "type": "Casual Leave",
+      "reason": "Good friday",
+      "status": "approved",
+      "applied": "2026-03-30"
+    }
+  ],
+  "activityLog": [
+    {
+      "type": "checkin",
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "time": "10:12",
+      "date": "2026-03-30",
+      "status": "present"
+    },
+    {
+      "type": "checkin",
+      "empId": "Emp0001",
+      "name": "Alex",
+      "time": "10:02",
+      "date": "2026-03-30",
+      "status": "present"
+    },
+    {
+      "type": "checkout",
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "time": "17:01",
+      "date": "2026-03-28",
+      "duration": "0h 01m",
+      "status": "checkout"
+    },
+    {
+      "type": "checkin",
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "time": "17:01",
+      "date": "2026-03-28",
+      "status": "late"
+    },
+    {
+      "type": "checkout",
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "time": "17:01",
+      "date": "2026-03-28",
+      "duration": "0h 01m",
+      "status": "checkout"
+    },
+    {
+      "type": "checkout",
+      "empId": "Emp0001",
+      "name": "Alex",
+      "time": "17:00",
+      "date": "2026-03-28",
+      "duration": "0h 02m",
+      "status": "checkout"
+    },
+    {
+      "type": "checkin",
+      "empId": "Emp0001",
+      "name": "Alex",
+      "time": "17:00",
+      "date": "2026-03-28",
+      "status": "late"
+    },
+    {
+      "type": "checkout",
+      "empId": "Emp0001",
+      "name": "Alex",
+      "time": "17:00",
+      "date": "2026-03-28",
+      "duration": "0h 02m",
+      "status": "checkout"
+    },
+    {
+      "type": "checkin",
+      "empId": "Emp0004",
+      "name": "Sunitha",
+      "time": "17:00",
+      "date": "2026-03-28",
+      "status": "late"
+    },
+    {
+      "type": "checkin",
+      "empId": "Emp0001",
+      "name": "Alex",
+      "time": "16:58",
+      "date": "2026-03-28",
+      "status": "late"
+    }
+  ]
+}

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WorkTrack — Employee</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e2a;--border:#252a38;--accent:#A7028C;--accent2:#0099ff;--warn:#ff6b35;--danger:#ff3860;--text:#e8eaf0;--muted:#6b7280;--success:#D916B8;--holiday:#a855f7;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.mono{font-family:'DM Mono',monospace;}
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;}
+#loginScreen{align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 20%,#1a0116,#0d0f14 60%),radial-gradient(ellipse at 80% 80%,#0a1a2e,transparent 60%);}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 52px;width:420px;box-shadow:0 40px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;}
+.login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.brand{text-align:center;margin-bottom:36px;}
+.brand-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;}
+.brand h1{font-size:28px;font-weight:800;letter-spacing:-.5px;}
+.brand p{color:var(--muted);font-size:13px;margin-top:4px;font-family:'DM Mono',monospace;}
+.field{margin-bottom:18px;}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.field input,.field select{width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(167,2,140,.1);}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;cursor:pointer;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;transition:all .2s;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--success));color:#ffffff;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(167,2,140,.3);}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{width:auto;padding:8px 16px;font-size:13px;border-radius:8px;}
+.login-error{color:var(--danger);font-size:13px;text-align:center;margin-top:12px;display:none;}
+.server-status{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:20px;font-size:12px;font-family:'DM Mono',monospace;}
+.s-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.s-dot.online{background:var(--accent);}
+.s-dot.offline{background:var(--danger);}
+#empScreen{flex-direction:column;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;align-items:center;gap:14px;}
+.topbar-brand{font-size:18px;font-weight:800;color:var(--accent);}
+.topbar-user{font-size:13px;color:var(--muted);font-family:'DM Mono',monospace;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.status-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;}
+.pill-in{background:rgba(167,2,140,.15);color:var(--accent);border:1px solid rgba(167,2,140,.3);}
+.pill-out{background:rgba(107,114,128,.15);color:var(--muted);border:1px solid var(--border);}
+.pill-late{background:rgba(255,107,53,.15);color:var(--warn);border:1px solid rgba(255,107,53,.3);}
+.pill-break{background:rgba(0,153,255,.15);color:var(--accent2);border:1px solid rgba(0,153,255,.3);}
+.emp-content{padding:32px;display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1100px;margin:0 auto;width:100%;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;}
+.card-title{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:20px;}
+.full-col{grid-column:1/-1;}
+.clock-display{text-align:center;padding:16px 0;}
+.clock-time{font-family:'DM Mono',monospace;font-size:52px;font-weight:500;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-2px;line-height:1;}
+.clock-date{color:var(--muted);font-size:13px;margin-top:8px;font-family:'DM Mono',monospace;}
+.clock-actions{display:flex;gap:12px;margin-top:20px;}
+.clock-actions .btn{flex:1;}
+.emp-notice{background:rgba(167,2,140,.05);border:1px solid rgba(167,2,140,.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--accent);font-family:'DM Mono',monospace;margin-bottom:14px;}
+.emp-notice.warn{background:rgba(255,107,53,.05);border-color:rgba(255,107,53,.2);color:var(--warn);}
+.emp-notice.info{background:rgba(0,153,255,.05);border-color:rgba(0,153,255,.2);color:var(--accent2);}
+.emp-notice.success{background:rgba(217,22,184,.05);border-color:rgba(217,22,184,.2);color:var(--success);}
+.timer-ring-wrap{display:flex;align-items:center;justify-content:center;margin:8px 0 16px;}
+svg.ring{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:var(--border);stroke-width:8;}
+.ring-fg{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset .5s ease;}
+.timer-elapsed{font-family:'DM Mono',monospace;font-size:32px;font-weight:500;color:var(--text);}
+.timer-label{font-size:12px;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace;}
+.timer-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.stat-box{background:var(--surface2);border-radius:10px;padding:12px 16px;}
+.stat-box .s-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.stat-box .s-val{font-family:'DM Mono',monospace;font-size:18px;color:var(--text);margin-top:4px;}
+.session-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.session-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);}
+.session-chip.active{border-color:var(--accent);color:var(--accent);}
+.att-list{max-height:220px;overflow-y:auto;}
+.att-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap;gap:4px;}
+.att-row:last-child{border-bottom:none;}
+.att-date{font-family:'DM Mono',monospace;color:var(--muted);font-size:12px;}
+.att-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;}
+.badge-present{background:rgba(167,2,140,.1);color:var(--accent);}
+.badge-late{background:rgba(255,107,53,.1);color:var(--warn);}
+.badge-holiday{background:rgba(168,85,247,.1);color:var(--holiday);}
+.badge-absent{background:rgba(255,56,96,.1);color:var(--danger);}
+.holiday-form .field{margin-bottom:14px;}
+.holiday-form textarea{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;resize:vertical;min-height:80px;outline:none;}
+.holiday-form textarea:focus{border-color:var(--holiday);box-shadow:0 0 0 3px rgba(168,85,247,.1);}
+.req-list{display:flex;flex-direction:column;gap:12px;}
+.req-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.req-card.approved{border-left:3px solid var(--accent);}
+.req-card.rejected{border-left:3px solid var(--danger);}
+.req-card.pending{border-left:3px solid var(--holiday);}
+.ri-name{font-weight:700;font-size:14px;}
+.ri-dates{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);margin-top:3px;}
+.ri-reason{font-size:12px;color:var(--text);margin-top:6px;opacity:.8;}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 22px;font-size:14px;z-index:999;display:none;align-items:center;gap:12px;box-shadow:0 16px 40px rgba(0,0,0,.5);min-width:280px;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast.show{display:flex;animation:slideUp .3s ease;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.brand-logo {
+  max-width: 240px; /* Adjust this number to make the logo larger or smaller */
+  height: auto;
+  display: block;
+  margin: 0 auto 16px auto; /* Centers the image and adds space below it */
+  border-radius: 8px; /* Optional: smooths the corners slightly to blend with the dark background */
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <div class="brand">
+      <img src="hydra.jpg" alt="Hydra Infotech Logo" class="brand-logo" />
+      <p class="mono">Employee Panel</p>
+    </div>
+    <div class="server-status">
+      <div class="s-dot" id="sDot"></div>
+      <span id="sStatus" class="mono">Connecting to server...</span>
+    </div>
+    <div class="field">
+      <label>Employee ID</label>
+      <input type="text" id="loginId" placeholder="e.g. EMP001" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="loginError">Invalid Employee ID or password.</div>
+  </div>
+</div>
+
+<div id="empScreen" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-brand">⏱ WorkTrack</span>
+      <span class="topbar-user" id="empNameBar">—</span>
+    </div>
+    <div class="topbar-right">
+      <span class="status-pill pill-out" id="statusPill">● OFFLINE</span>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="emp-content">
+    <div class="card">
+      <div class="card-title">Current Time</div>
+      <div class="clock-display">
+        <div class="clock-time" id="liveClock">--:--:--</div>
+        <div class="clock-date" id="liveDate">---</div>
+      </div>
+      <div id="empNotice"></div>
+      <div class="clock-actions">
+        <button class="btn btn-primary" id="checkInBtn" onclick="checkIn()">✓ Clock In</button>
+        <button class="btn btn-secondary" id="checkOutBtn" onclick="checkOut()" disabled>◼ Clock Out</button>
+      </div>
+      <div class="session-row" id="sessionChips"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Work Timer — Today's Progress</div>
+      <div class="timer-ring-wrap">
+        <div style="position:relative;width:160px;height:160px;">
+          <svg class="ring" width="160" height="160" viewBox="0 0 160 160">
+            <circle class="ring-bg" cx="80" cy="80" r="68"/>
+            <circle class="ring-fg" id="timerRing" cx="80" cy="80" r="68" stroke-dasharray="427" stroke-dashoffset="427"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div class="timer-elapsed" id="timerElapsed">00:00:00</div>
+            <div class="timer-label" id="timerPct">0%</div>
+          </div>
+        </div>
+      </div>
+      <div class="timer-stats">
+        <div class="stat-box"><div class="s-label">Session</div><div class="s-val" id="sessionLabel">1 of 2</div></div>
+        <div class="stat-box"><div class="s-label">Remaining</div><div class="s-val" id="remainingTime">--:--:--</div></div>
+        <div class="stat-box"><div class="s-label">Target Hours</div><div class="s-val" id="targetHours">9h</div></div>
+        <div class="stat-box"><div class="s-label">Total Today</div><div class="s-val" id="totalToday">0h 00m</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">My Attendance History</div>
+      <div class="att-list" id="attHistory"><p style="color:var(--muted);font-size:13px;">Loading...</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Apply for Leave</div>
+      <div class="holiday-form">
+        <div class="field"><label>From Date</label><input type="date" id="hFrom"/></div>
+        <div class="field"><label>To Date</label><input type="date" id="hTo"/></div>
+        <div class="field">
+          <label>Leave Type</label>
+          <select id="hType"><option>Casual Leave</option><option>Sick Leave</option><option>Annual Leave</option><option>Emergency Leave</option></select>
+        </div>
+        <div class="field"><label>Reason</label><textarea id="hReason" placeholder="Briefly describe your reason..."></textarea></div>
+        <button class="btn" style="background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.4);color:var(--holiday);" onclick="submitLeave()">✈ Submit Leave Request</button>
+      </div>
+    </div>
+
+    <div class="card full-col">
+      <div class="card-title">My Leave Requests</div>
+      <div class="req-list" id="myRequests"><p style="color:var(--muted);font-size:13px;">Loading...</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastIcon">✅</span><span id="toastMsg">—</span></div>
+
+<script>
+const SERVER = window.location.hostname === 'localhost' || window.location.hostname.match(/^\d/)
+  ? `${window.location.protocol}//${window.location.host}`
+  : 'http://localhost:3000';
+
+async function api(method, path, data) {
+  try {
+    const r = await fetch(SERVER + path, {
+      method,
+      headers:{'Content-Type':'application/json'},
+      body: data ? JSON.stringify(data) : undefined
+    });
+    return await r.json();
+  } catch(e) {
+    return [];
+  }
+}
+
+let session  = {};
+let settings = { workHours:9, startTime:'09:30', endTime:'18:30', graceMins:15 };
+let timerInterval = null, clockInterval = null;
+let checkInTs     = null;
+let sessionCount  = 0;      
+let totalWorkedSecs = 0;
+
+async function checkServer() {
+  const s = await api('GET', '/api/settings');
+  const dot = document.getElementById('sDot');
+  const st  = document.getElementById('sStatus');
+  if (s && !s.error) {
+    settings = s;
+    dot.className = 's-dot online';
+    st.textContent = 'Server online ✓';
+  } else {
+    dot.className = 's-dot offline';
+    st.textContent = 'Server offline — contact admin';
+  }
+}
+checkServer();
+
+async function doLogin() {
+  const empId    = document.getElementById('loginId').value.trim();
+  const password = document.getElementById('loginPass').value.trim();
+  const err      = document.getElementById('loginError');
+  err.style.display = 'none';
+  if (!empId || !password) { err.textContent='Enter your ID and password.'; err.style.display='block'; return; }
+  
+  const res = await api('POST', '/api/auth/employee', {empId, password});
+  if (res.ok) {
+    session = { empId: res.emp.id, name: res.emp.name, dept: res.emp.dept };
+    showScreen('empScreen');
+    initDashboard();
+  } else {
+    err.textContent = res.error || 'Invalid credentials.';
+    err.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  clearInterval(timerInterval);
+  clearInterval(clockInterval);
+  session = {}; checkInTs = null; sessionCount = 0; totalWorkedSecs = 0;
+  showScreen('loginScreen');
+  document.getElementById('loginId').value  = '';
+  document.getElementById('loginPass').value = '';
+  checkServer();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// FIX: Removed buggy restoreSession reliance on sessionStorage, loading true state from server
+async function initDashboard() {
+  document.getElementById('empNameBar').textContent = `${session.name} (${session.empId})`;
+  const s = await api('GET', '/api/settings');
+  if (s && !s.error) settings = s;
+  document.getElementById('targetHours').textContent = settings.workHours + 'h';
+  startClock();
+  
+  await loadHistoryAndState();
+  loadLeaves();
+  setInterval(loadLeaves, 30000);
+}
+
+function startClock() {
+  clearInterval(clockInterval);
+  function tick() {
+    const now = new Date();
+    document.getElementById('liveClock').textContent = now.toLocaleTimeString('en-US',{hour12:true});
+    document.getElementById('liveDate').textContent  = now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    checkNotice(now);
+  }
+  tick(); clockInterval = setInterval(tick, 1000);
+}
+
+function checkNotice(now) {
+  const box = document.getElementById('empNotice');
+  const [sh,sm] = settings.startTime.split(':').map(Number);
+  const [eh,em] = settings.endTime.split(':').map(Number);
+  const startMin = sh*60+sm, endMin = eh*60+em;
+  const nowMin   = now.getHours()*60 + now.getMinutes();
+  
+  if (nowMin < startMin) {
+    box.innerHTML = `<div class="emp-notice info">🕘 Office opens at ${settings.startTime}</div>`; return;
+  }
+  if (nowMin >= startMin && nowMin <= startMin + settings.graceMins && sessionCount === 0 && !checkInTs) {
+    box.innerHTML = `<div class="emp-notice">⚡ On time! Clock in now.</div>`; return;
+  }
+  if (checkInTs) {
+    box.innerHTML = `<div class="emp-notice">✅ Session ${sessionCount} in progress</div>`; return;
+  }
+  if (!checkInTs) {
+    if (sessionCount === 0) {
+      if (nowMin <= endMin) {
+        box.innerHTML = `<div class="emp-notice warn">⚠ You haven't clocked in yet!</div>`;
+      } else {
+        box.innerHTML = `<div class="emp-notice warn">⚠ Office hours ended. You were absent today.</div>`;
+      }
+    } else if (sessionCount === 1) {
+      box.innerHTML = `<div class="emp-notice info">⏸ On break. Clock in again to start Session 2.</div>`;
+    } else if (sessionCount >= 2) {
+      box.innerHTML = `<div class="emp-notice success">✅ Work completed for today!</div>`;
+    }
+    return;
+  }
+  if (nowMin > endMin) {
+    box.innerHTML = `<div class="emp-notice">🏁 Office hours ended. Don't forget to clock out!</div>`;
+  }
+}
+
+async function checkIn() {
+  if (sessionCount >= 2) { showToast('⚠️','You already completed 2 sessions today'); return; }
+  if (checkInTs) { showToast('⚠️','Already clocked in!'); return; }
+
+  const now = new Date();
+  const checkInStr = now.toTimeString().slice(0,5);
+
+  const [sh,sm] = settings.startTime.split(':').map(Number);
+  const startMin = sh*60+sm;
+  const nowMin   = now.getHours()*60+now.getMinutes();
+  const status   = sessionCount === 0
+    ? (nowMin <= startMin + settings.graceMins ? 'present' : 'late')
+    : 'present';
+    
+  const res = await api('POST', '/api/checkin', { empId: session.empId, name: session.name, checkIn: checkInStr, status });
+  if (res.error) { showToast('❌', res.error); return; }
+
+  checkInTs = now;
+  sessionCount++;
+  document.getElementById('checkInBtn').disabled  = true;
+  document.getElementById('checkOutBtn').disabled = false;
+  document.getElementById('sessionLabel').textContent = `${sessionCount} of 2`;
+
+  updateSessionChips(res.rec);
+  startTimer();
+  
+  if (res.lateMsg) {
+    showToast('⚠️', res.lateMsg);
+  } else if (sessionCount === 2) {
+    showToast('✅', `Session 2 started at ${checkInStr}`);
+  } else {
+    showToast('✅', `Clocked in at ${checkInStr}${status==='late'?' — (Late)':''}`);
+  }
+}
+
+async function checkOut() {
+  if (!checkInTs) { showToast('⚠️','Not clocked in!'); return; }
+
+  const now = new Date();
+  const checkOutStr = now.toTimeString().slice(0,5);
+  const res = await api('POST', '/api/checkout', { empId: session.empId, name: session.name, checkOut: checkOutStr });
+  
+  if (res.error) { showToast('❌', res.error); return; }
+
+  const sessionSecs = Math.floor((now - checkInTs) / 1000);
+  totalWorkedSecs  += sessionSecs;
+
+  clearInterval(timerInterval);
+  timerInterval = null;
+  checkInTs = null;
+
+  document.getElementById('checkInBtn').disabled  = false;
+  document.getElementById('checkOutBtn').disabled = true;
+  document.getElementById('totalToday').textContent = res.totalWork || fmt(totalWorkedSecs);
+
+  updateSessionChips(res);
+  const TARGET = settings.workHours * 3600;
+  
+  if (sessionCount < 2) {
+    const pill = document.getElementById('statusPill');
+    pill.className = 'status-pill pill-break';
+    pill.textContent = '⏸ BREAK';
+    if (totalWorkedSecs >= TARGET) {
+      showToast('✅', `Full Day Complete! Total: ${res.totalWork || fmt(totalWorkedSecs)}`);
+    } else {
+      showToast('⏸', 'Break started — Clock in again for Session 2');
+    }
+  } else {
+    const pill = document.getElementById('statusPill');
+    pill.className = 'status-pill pill-out';
+    pill.textContent = '● OFFLINE';
+    if (totalWorkedSecs < TARGET) {
+      const workedStr  = fmt(totalWorkedSecs);
+      const shortStr   = fmt(TARGET - totalWorkedSecs);
+      showToast('⚠️', `Half Day — You are Absent (Worked: ${workedStr}, Short by: ${shortStr})`);
+    } else {
+      showToast('✅', `Full Day Complete! Total: ${res.totalWork || fmt(totalWorkedSecs)}`);
+    }
+  }
+
+  await loadHistoryAndState();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  const TARGET = settings.workHours * 3600;
+  const CIRC   = 427;
+  timerInterval = setInterval(() => {
+    if (!checkInTs) return;
+    const sessionSecs  = Math.floor((new Date() - checkInTs) / 1000);
+    const totalSecs    = totalWorkedSecs + sessionSecs;
+    const pct          = Math.min(totalSecs / TARGET, 1);
+    const rem          = Math.max(TARGET - totalSecs, 0);
+
+    document.getElementById('timerElapsed').textContent  = fmt(sessionSecs);
+    document.getElementById('timerPct').textContent      = Math.floor(pct * 100) + '%';
+    document.getElementById('remainingTime').textContent = fmt(rem);
+    document.getElementById('totalToday').textContent    = fmt(totalSecs);
+    document.getElementById('timerRing').style.strokeDashoffset = CIRC * (1 - pct);
+    if (totalSecs >= TARGET)
+      document.getElementById('timerRing').style.stroke = 'var(--success)';
+  }, 1000);
+}
+
+function updateSessionChips(rec) {
+  const chips = document.getElementById('sessionChips');
+  if (!rec || !rec.sessions) { chips.innerHTML = ''; return; }
+  chips.innerHTML = rec.sessions.map((s, i) =>
+    `<span class="session-chip ${!s.out ? 'active' : ''}">S${i+1}: ${s.in}→${s.out||'now'}</span>`
+  ).join('');
+}
+
+function fmt(s) {
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+function setPill(status) {
+  const p = document.getElementById('statusPill');
+  if (status==='late') { p.className='status-pill pill-late'; p.textContent='● LATE'; }
+  else                 { p.className='status-pill pill-in'; p.textContent='● PRESENT'; }
+}
+
+// FIX: Combined loading history and pulling accurate server state to prevent desync
+async function loadHistoryAndState() {
+  const res = await api('GET', `/api/attendance/${session.empId}`);
+  const rows = Array.isArray(res) ? res : [];
+
+  const el = document.getElementById('attHistory');
+  if (!rows.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No records yet.</p>';
+  } else {
+    const sorted = [...rows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+    el.innerHTML = sorted.map(r => {
+      const sessionText = r.sessions
+        ? r.sessions.map(s => `${s.in}→${s.out||'--'}`).join(' | ')
+        : `${r.checkIn||'—'} → ${r.checkOut||'—'}`;
+      const total = r.totalWork || r.duration || '—';
+      return `
+        <div class="att-row">
+          <span class="att-date">${r.date}</span>
+          <span>${sessionText}</span>
+          <span>${total}</span>
+          <span class="att-badge badge-${r.status||'absent'}">${r.status||'absent'}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Restore server state for today
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  const today = d.toISOString().split('T')[0];
+  const todayRec = rows.find(r => r.date === today);
+
+  if (todayRec) {
+    sessionCount = todayRec.sessions ? todayRec.sessions.length : 0;
+    const openSession = todayRec.sessions ? todayRec.sessions.find(s => s.in && !s.out) : null;
+
+    totalWorkedSecs = (todayRec.sessions || []).reduce((acc, s) => {
+      if(s.in && s.out) {
+        const [h1,m1] = s.in.split(':').map(Number);
+        const [h2,m2] = s.out.split(':').map(Number);
+        return acc + ((h2*3600 + m2*60) - (h1*3600 + m1*60));
+      }
+      return acc;
+    }, 0);
+
+    if (openSession) {
+      const [h, m] = openSession.in.split(':').map(Number);
+      const now = new Date();
+      checkInTs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+      document.getElementById('checkInBtn').disabled = true;
+      document.getElementById('checkOutBtn').disabled = false;
+      setPill(sessionCount >= 2 ? 'late' : 'present');
+      startTimer();
+    } else if (sessionCount === 1) {
+      const pill = document.getElementById('statusPill');
+      pill.className = 'status-pill pill-break';
+      pill.textContent = '⏸ BREAK';
+    }
+
+    document.getElementById('sessionLabel').textContent = `${Math.max(sessionCount,1)} of 2`;
+    document.getElementById('totalToday').textContent = todayRec.totalWork || fmt(totalWorkedSecs);
+    updateSessionChips(todayRec);
+  }
+}
+
+async function loadLeaves() {
+  const res = await api('GET', `/api/leaves/${session.empId}`);
+  const reqs = Array.isArray(res) ? res : [];
+  const el = document.getElementById('myRequests');
+  
+  if (!reqs.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No leave requests.</p>';
+    return;
+  }
+  el.innerHTML = reqs.map(r => `
+    <div class="req-card ${r.status}">
+      <div>
+        <div class="ri-name">${r.type}</div>
+        <div class="ri-dates">${r.from} → ${r.to}</div>
+        <div class="ri-reason">${r.reason}</div>
+      </div>
+      <span class="att-badge badge-${r.status||'holiday'}">${(r.status||'pending').toUpperCase()}</span>
+    </div>
+  `).join('');
+}
+
+async function submitLeave() {
+  const from   = document.getElementById('hFrom').value;
+  const to     = document.getElementById('hTo').value;
+  const type   = document.getElementById('hType').value;
+  const reason = document.getElementById('hReason').value.trim();
+  if (!from||!to||!reason) { showToast('⚠️','Fill all fields.'); return; }
+  
+  // FIX: Local timezone offset applied to "applied date"
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  
+  const res = await api('POST', '/api/leaves', {
+    id: 'REQ'+Date.now(), empId: session.empId, name: session.name,
+    from, to, type, reason, status: 'pending',
+    applied: d.toISOString().split('T')[0]
+  });
+  
+  if (res.error) { showToast('❌','Server error.'); return; }
+  document.getElementById('hFrom').value  = '';
+  document.getElementById('hTo').value    = '';
+  document.getElementById('hReason').value = '';
+  loadLeaves();
+  showToast('✈️','Leave request submitted! Awaiting admin approval.');
+}
+
+let toastTimer;
+function showToast(icon, msg) {
+  clearTimeout(toastTimer);
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent  = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
