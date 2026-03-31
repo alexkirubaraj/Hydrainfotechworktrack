@@ -1,176 +1,226 @@
 const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(express.static(__dirname));
 
-// ================== MONGODB CONNECT ==================
+// ================= MONGODB =================
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log(err));
 
-// ================== SCHEMA ==================
-const AttendanceSchema = new mongoose.Schema({
+// ================= SCHEMAS =================
+const Employee = mongoose.model('Employee', new mongoose.Schema({
+  id: String,
+  name: String,
+  password: String
+}));
+
+const Attendance = mongoose.model('Attendance', new mongoose.Schema({
   empId: String,
   name: String,
   date: String,
   sessions: [
     {
-      checkIn: String,
-      checkOut: String
+      in: String,
+      out: String,
+      lateNote: String
     }
   ],
   totalWork: String,
   status: String
-});
+}));
 
-const ActivitySchema = new mongoose.Schema({
+const Activity = mongoose.model('Activity', new mongoose.Schema({
   type: String,
   empId: String,
   name: String,
   time: String,
-  date: String,
-  status: String
-});
+  date: String
+}));
 
-const Attendance = mongoose.model('Attendance', AttendanceSchema);
-const Activity = mongoose.model('Activity', ActivitySchema);
-
-// ================== HELPERS ==================
+// ================= HELPERS =================
 function today() {
   return new Date().toISOString().split('T')[0];
 }
 
-function calculateDuration(sessions) {
-  let totalMs = 0;
-
+function calcTotalSeconds(sessions) {
+  let total = 0;
   sessions.forEach(s => {
-    if (s.checkIn && s.checkOut) {
-      const start = new Date(`1970-01-01T${s.checkIn}`);
-      const end = new Date(`1970-01-01T${s.checkOut}`);
-      totalMs += (end - start);
+    if (s.in && s.out) {
+      const [h1,m1] = s.in.split(':').map(Number);
+      const [h2,m2] = s.out.split(':').map(Number);
+      total += (h2*3600 + m2*60) - (h1*3600 + m1*60);
     }
   });
-
-  const hrs = Math.floor(totalMs / (1000 * 60 * 60));
-  const mins = Math.floor((totalMs % (1000 * 60 * 60)) / (1000 * 60));
-
-  return `${hrs}h ${mins}m`;
+  return total;
 }
 
-// ================== CHECK-IN ==================
-app.post('/api/checkin', async (req, res) => {
-  const { empId, name, checkIn, status } = req.body;
+function secsToStr(secs) {
+  const h = Math.floor(secs/3600);
+  const m = Math.floor((secs%3600)/60);
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+// ================= ROUTES =================
+
+// Serve pages
+app.get('/', (req,res)=>res.redirect('/employee'));
+
+app.get('/admin', (req,res)=>{
+  res.sendFile(path.join(__dirname,'admin.html'));
+});
+
+app.get('/employee', (req,res)=>{
+  res.sendFile(path.join(__dirname,'employee.html'));
+});
+
+// ================= AUTH =================
+app.post('/api/auth/employee', async (req,res)=>{
+  const { empId, password } = req.body;
+
+  const user = await Employee.findOne({ id: empId });
+
+  if (!user || user.password !== password) {
+    return res.status(401).json({ ok:false, error:'Invalid credentials' });
+  }
+
+  res.json({ ok:true, emp:user });
+});
+
+// ================= EMPLOYEES =================
+app.get('/api/employees', async (req,res)=>{
+  const data = await Employee.find();
+  res.json(data);
+});
+
+app.post('/api/employees', async (req,res)=>{
+  const { id,name,password } = req.body;
+
+  const exists = await Employee.findOne({ id });
+  if (exists) return res.status(400).json({ error:'ID exists' });
+
+  const emp = new Employee({ id,name,password });
+  await emp.save();
+
+  res.json(emp);
+});
+
+// ================= ATTENDANCE =================
+app.get('/api/attendance', async (req,res)=>{
+  const data = await Attendance.find();
+  res.json(data);
+});
+
+app.get('/api/attendance/:id', async (req,res)=>{
+  const data = await Attendance.find({ empId:req.params.id });
+  res.json(data);
+});
+
+// ================= CHECK-IN =================
+app.post('/api/checkin', async (req,res)=>{
+  const { empId,name,checkIn,status } = req.body;
   const date = today();
 
-  let record = await Attendance.findOne({ empId, date });
+  let rec = await Attendance.findOne({ empId,date });
 
-  if (!record) {
-    // First session
-    record = new Attendance({
+  if (!rec) {
+    rec = new Attendance({
       empId,
       name,
       date,
-      sessions: [{ checkIn, checkOut: null }],
-      totalWork: '-',
-      status
+      sessions: [],
+      totalWork: '0h 00m',
+      status: status || 'present'
     });
-  } else {
-    // Second session
-    if (record.sessions.length >= 2) {
-      return res.json({ message: "Already checked in twice today" });
-    }
-
-    record.sessions.push({ checkIn, checkOut: null });
   }
 
-  await record.save();
+  const completed = rec.sessions.filter(s=>s.in && s.out).length;
+  const open = rec.sessions.find(s=>s.in && !s.out);
+
+  if (completed >= 2)
+    return res.json({ error:'Already completed 2 sessions' });
+
+  if (open)
+    return res.json({ error:'Already clocked in' });
+
+  let lateMsg = null;
+
+  if (rec.sessions.length === 1 && rec.sessions[0].out) {
+    const [h,m] = rec.sessions[0].out.split(':').map(Number);
+    const expected = h*60 + m + 45;
+
+    const [ch,cm] = checkIn.split(':').map(Number);
+    const actual = ch*60 + cm;
+
+    if (actual > expected) {
+      lateMsg = `Late by ${actual-expected} mins`;
+    }
+  }
+
+  rec.sessions.push({ in:checkIn, out:null, lateNote:lateMsg });
+
+  await rec.save();
 
   await Activity.create({
-    type: 'checkin',
+    type:'checkin',
     empId,
     name,
-    time: checkIn,
-    date,
-    status
+    time:checkIn,
+    date
   });
 
-  res.json(record);
+  res.json({ rec, lateMsg });
 });
 
-// ================== CHECK-OUT ==================
-app.post('/api/checkout', async (req, res) => {
+// ================= CHECK-OUT =================
+app.post('/api/checkout', async (req,res)=>{
   const { empId, checkOut } = req.body;
   const date = today();
 
-  let record = await Attendance.findOne({ empId, date });
+  const rec = await Attendance.findOne({ empId,date });
 
-  if (!record) return res.json({ message: "No check-in found" });
+  if (!rec) return res.json({ error:'No record' });
 
-  const lastSession = record.sessions[record.sessions.length - 1];
+  const open = rec.sessions.find(s=>s.in && !s.out);
 
-  if (!lastSession || lastSession.checkOut) {
-    return res.json({ message: "Already checked out" });
+  if (!open) return res.json({ error:'No active session' });
+
+  open.out = checkOut;
+
+  const total = calcTotalSeconds(rec.sessions);
+  rec.totalWork = secsToStr(total);
+
+  const completed = rec.sessions.filter(s=>s.in && s.out).length;
+
+  if (completed >= 2 && total < 9*3600) {
+    rec.status = 'absent';
   }
 
-  lastSession.checkOut = checkOut;
-
-  // Calculate total work
-  record.totalWork = calculateDuration(record.sessions);
-
-  // Status logic
-  const totalHours = parseInt(record.totalWork);
-
-  if (totalHours >= 9) {
-    record.status = "Full Day";
-  } else {
-    record.status = "Half - You are absent";
-  }
-
-  await record.save();
+  await rec.save();
 
   await Activity.create({
-    type: 'checkout',
+    type:'checkout',
     empId,
-    name: record.name,
-    time: checkOut,
-    date,
-    status: record.status
+    name:rec.name,
+    time:checkOut,
+    date
   });
 
-  res.json(record);
+  res.json(rec);
 });
 
-// ================== GET ATTENDANCE ==================
-app.get('/api/attendance', async (req, res) => {
-  const data = await Attendance.find().sort({ date: -1 });
+// ================= ACTIVITY =================
+app.get('/api/activity', async (req,res)=>{
+  const data = await Activity.find().sort({_id:-1}).limit(100);
   res.json(data);
 });
 
-// ================== GET ACTIVITY ==================
-app.get('/api/activity', async (req, res) => {
-  const data = await Activity.find().sort({ _id: -1 }).limit(100);
-  res.json(data);
-});
-
-// ================== SERVER ==================
-app.listen(PORT, () => {
-  console.log(`\n🚀 WorkTrack Server Running on port ${PORT}`);
-});
-
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-app.get('/employee', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'employee.html'));
+// ================= START =================
+app.listen(PORT, ()=>{
+  console.log(`🚀 Server running on port ${PORT}`);
 });
