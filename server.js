@@ -80,6 +80,36 @@ app.get('/employee', (req,res)=>{
 });
 
 // ================= AUTH =================
+app.post('/api/auth/admin', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // Simple hardcoded admin (for now)
+    if (username === 'admin' && password === 'admin123') {
+      return res.json({
+        ok: true,
+        name: 'Admin',
+        username: 'admin'
+      });
+    }
+
+    if (username === 'admin2' && password === 'admin456') {
+      return res.json({
+        ok: true,
+        name: 'Admin 2',
+        username: 'admin2'
+      });
+    }
+
+    return res.status(401).json({
+      ok: false,
+      error: 'Invalid credentials'
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 app.post('/api/auth/employee', async (req,res)=>{
   const { empId, password } = req.body;
 
