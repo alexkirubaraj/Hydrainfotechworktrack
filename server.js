@@ -152,21 +152,15 @@ app.put('/api/settings', (req,res)=>{
 });
 
 // ================= LEAVES =================
-// ================= LEAVES =================
-
-
-// Get ALL leaves (admin)
 app.get('/api/leaves', (req,res)=>{
   res.json(leaves);
 });
 
-// Get leaves by employee (🔥 THIS FIXES YOUR ERROR)
 app.get('/api/leaves/:empId', (req,res)=>{
   const data = leaves.filter(l => l.empId === req.params.empId);
   res.json(data);
 });
 
-// Add leave
 app.post('/api/leaves', (req,res)=>{
   const leave = {
     id: Date.now().toString(),
@@ -178,7 +172,6 @@ app.post('/api/leaves', (req,res)=>{
   res.json({ ok:true });
 });
 
-// Update leave status (admin)
 app.put('/api/leaves/:id', (req,res)=>{
   leaves = leaves.map(l =>
     l.id === req.params.id
@@ -187,6 +180,17 @@ app.put('/api/leaves/:id', (req,res)=>{
   );
 
   res.json({ ok:true });
+});
+
+// ================= ATTENDANCE (🔥 FIX ADDED) =================
+app.get('/api/attendance', async (req,res)=>{
+  const data = await Attendance.find().sort({ date: -1 });
+  res.json(data);
+});
+
+app.get('/api/attendance/:empId', async (req,res)=>{
+  const data = await Attendance.find({ empId: req.params.empId });
+  res.json(data);
 });
 
 // ================= CHECK-IN =================
@@ -207,14 +211,8 @@ app.post('/api/checkin', async (req,res)=>{
     });
   }
 
-  const completed = rec.sessions.filter(s=>s.in && s.out).length;
   const open = rec.sessions.find(s=>s.in && !s.out);
-
-  if (completed >= 2)
-    return res.json({ error:'Already completed 2 sessions' });
-
-  if (open)
-    return res.json({ error:'Already clocked in' });
+  if (open) return res.json({ error:'Already clocked in' });
 
   rec.sessions.push({ in:checkIn, out:null });
 
@@ -241,7 +239,6 @@ app.post('/api/checkout', async (req,res)=>{
   if (!rec) return res.json({ error:'No record' });
 
   const open = rec.sessions.find(s=>s.in && !s.out);
-
   if (!open) return res.json({ error:'No active session' });
 
   open.out = checkOut;
