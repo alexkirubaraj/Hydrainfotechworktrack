@@ -17,6 +17,8 @@ mongoose.connect(process.env.MONGO_URI)
 const Employee = mongoose.model('Employee', new mongoose.Schema({
   id: String,
   name: String,
+  dept: String,
+  email: String,
   password: String
 }));
 
@@ -43,6 +45,17 @@ const Activity = mongoose.model('Activity', new mongoose.Schema({
   date: String
 }));
 
+// ================= TEMP DATA =================
+let settings = {
+  workHours: 9,
+  startTime: '09:30',
+  endTime: '18:30',
+  graceMins: 15,
+  breakMins: 45
+};
+
+let leaves = [];
+
 // ================= HELPERS =================
 function today() {
   return new Date().toISOString().split('T')[0];
@@ -68,7 +81,7 @@ function secsToStr(secs) {
 
 // ================= ROUTES =================
 
-// Serve pages
+// Pages
 app.get('/', (req,res)=>res.redirect('/employee'));
 
 app.get('/admin', (req,res)=>{
@@ -80,36 +93,20 @@ app.get('/employee', (req,res)=>{
 });
 
 // ================= AUTH =================
-app.post('/api/auth/admin', async (req, res) => {
+app.post('/api/auth/admin', (req, res) => {
   const { username, password } = req.body;
 
-  try {
-    // Simple hardcoded admin (for now)
-    if (username === 'admin' && password === 'admin123') {
-      return res.json({
-        ok: true,
-        name: 'Admin',
-        username: 'admin'
-      });
-    }
-
-    if (username === 'admin2' && password === 'admin456') {
-      return res.json({
-        ok: true,
-        name: 'Admin 2',
-        username: 'admin2'
-      });
-    }
-
-    return res.status(401).json({
-      ok: false,
-      error: 'Invalid credentials'
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+  if (username === 'admin' && password === 'admin123') {
+    return res.json({ ok:true, name:'Admin', username:'admin' });
   }
+
+  if (username === 'admin2' && password === 'admin456') {
+    return res.json({ ok:true, name:'Admin 2', username:'admin2' });
+  }
+
+  res.status(401).json({ ok:false, error:'Invalid credentials' });
 });
+
 app.post('/api/auth/employee', async (req,res)=>{
   const { empId, password } = req.body;
 
@@ -129,15 +126,39 @@ app.get('/api/employees', async (req,res)=>{
 });
 
 app.post('/api/employees', async (req,res)=>{
-  const { id,name,password } = req.body;
+  const { id, name, dept, email, password } = req.body;
+
+  if (!id || !name || !dept || !email || !password) {
+    return res.status(400).json({ error:'All fields required' });
+  }
 
   const exists = await Employee.findOne({ id });
   if (exists) return res.status(400).json({ error:'ID exists' });
 
-  const emp = new Employee({ id,name,password });
+  const emp = new Employee({ id, name, dept, email, password });
   await emp.save();
 
-  res.json(emp);
+  res.json({ ok:true });
+});
+
+// ================= SETTINGS =================
+app.get('/api/settings', (req,res)=>{
+  res.json(settings);
+});
+
+app.put('/api/settings', (req,res)=>{
+  settings = req.body;
+  res.json(settings);
+});
+
+// ================= LEAVES =================
+app.get('/api/leaves', (req,res)=>{
+  res.json(leaves);
+});
+
+app.post('/api/leaves', (req,res)=>{
+  leaves.push(req.body);
+  res.json({ ok:true });
 });
 
 // ================= ATTENDANCE =================
@@ -178,21 +199,7 @@ app.post('/api/checkin', async (req,res)=>{
   if (open)
     return res.json({ error:'Already clocked in' });
 
-  let lateMsg = null;
-
-  if (rec.sessions.length === 1 && rec.sessions[0].out) {
-    const [h,m] = rec.sessions[0].out.split(':').map(Number);
-    const expected = h*60 + m + 45;
-
-    const [ch,cm] = checkIn.split(':').map(Number);
-    const actual = ch*60 + cm;
-
-    if (actual > expected) {
-      lateMsg = `Late by ${actual-expected} mins`;
-    }
-  }
-
-  rec.sessions.push({ in:checkIn, out:null, lateNote:lateMsg });
+  rec.sessions.push({ in:checkIn, out:null });
 
   await rec.save();
 
@@ -204,7 +211,7 @@ app.post('/api/checkin', async (req,res)=>{
     date
   });
 
-  res.json({ rec, lateMsg });
+  res.json({ ok:true });
 });
 
 // ================= CHECK-OUT =================
@@ -224,12 +231,6 @@ app.post('/api/checkout', async (req,res)=>{
 
   const total = calcTotalSeconds(rec.sessions);
   rec.totalWork = secsToStr(total);
-
-  const completed = rec.sessions.filter(s=>s.in && s.out).length;
-
-  if (completed >= 2 && total < 9*3600) {
-    rec.status = 'absent';
-  }
 
   await rec.save();
 
