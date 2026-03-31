@@ -152,24 +152,41 @@ app.put('/api/settings', (req,res)=>{
 });
 
 // ================= LEAVES =================
+// ================= LEAVES =================
+let leaves = [];
+
+// Get ALL leaves (admin)
 app.get('/api/leaves', (req,res)=>{
   res.json(leaves);
 });
 
+// Get leaves by employee (🔥 THIS FIXES YOUR ERROR)
+app.get('/api/leaves/:empId', (req,res)=>{
+  const data = leaves.filter(l => l.empId === req.params.empId);
+  res.json(data);
+});
+
+// Add leave
 app.post('/api/leaves', (req,res)=>{
-  leaves.push(req.body);
+  const leave = {
+    id: Date.now().toString(),
+    ...req.body,
+    status: 'pending'
+  };
+
+  leaves.push(leave);
   res.json({ ok:true });
 });
 
-// ================= ATTENDANCE =================
-app.get('/api/attendance', async (req,res)=>{
-  const data = await Attendance.find();
-  res.json(data);
-});
+// Update leave status (admin)
+app.put('/api/leaves/:id', (req,res)=>{
+  leaves = leaves.map(l =>
+    l.id === req.params.id
+      ? { ...l, status: req.body.status }
+      : l
+  );
 
-app.get('/api/attendance/:id', async (req,res)=>{
-  const data = await Attendance.find({ empId:req.params.id });
-  res.json(data);
+  res.json({ ok:true });
 });
 
 // ================= CHECK-IN =================
