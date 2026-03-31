@@ -140,6 +140,21 @@ app.post('/api/employees', async (req,res)=>{
 
   res.json({ ok:true });
 });
+// DELETE employee (🔥 FIX)
+app.delete('/api/employees/:id', async (req,res)=>{
+  try {
+    const result = await Employee.deleteOne({ id: req.params.id });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error:'Employee not found' });
+    }
+
+    res.json({ ok:true });
+
+  } catch (err) {
+    res.status(500).json({ error:'Server error' });
+  }
+});
 
 // ================= SETTINGS =================
 app.get('/api/settings', (req,res)=>{
