@@ -208,6 +208,114 @@ svg.ring{transform:rotate(-90deg);}
 /* Scrollbar */
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(167,2,140,.3);border-radius:2px;}
 
+/* ═══ GB-POPUP-SCALE-BLUR ANIMATION ═══════════════════════ */
+@keyframes gb-popup-scale-blur {
+  0%   {opacity:0;transform-origin:50% 50%;transform:scale(2,2);filter:blur(90px);}
+  100% {opacity:1;transform-origin:50% 50%;transform:scale(1,1);filter:blur(0px);}
+}
+.visible-section .gb-popup-scale-blur,
+.visible-lightbox .gb-popup-scale-blur {
+  animation: gb-popup-scale-blur 1s both;
+}
+.gb-popup-scale-blur {
+  animation: gb-popup-scale-blur 1s both;
+}
+
+/* ═══ BUTTON ANIMATIONS ════════════════════════════════════ */
+@keyframes btn-ripple {
+  0%   {box-shadow:0 0 0 0 rgba(167,2,140,.5);}
+  70%  {box-shadow:0 0 0 12px rgba(167,2,140,0);}
+  100% {box-shadow:0 0 0 0 rgba(167,2,140,0);}
+}
+@keyframes btn-pulse-glow {
+  0%,100% {box-shadow:0 0 8px rgba(167,2,140,.3),0 4px 15px rgba(0,0,0,.3);}
+  50%      {box-shadow:0 0 22px rgba(217,22,184,.6),0 4px 20px rgba(167,2,140,.4);}
+}
+@keyframes btn-bounce-in {
+  0%   {transform:scale(1);}
+  40%  {transform:scale(.94);}
+  70%  {transform:scale(1.04);}
+  100% {transform:scale(1);}
+}
+@keyframes btn-danger-shake {
+  0%,100% {transform:translateX(0);}
+  20%     {transform:translateX(-3px);}
+  40%     {transform:translateX(3px);}
+  60%     {transform:translateX(-2px);}
+  80%     {transform:translateX(2px);}
+}
+@keyframes checkin-pulse {
+  0%,100% {box-shadow:0 0 0 0 rgba(167,2,140,.45);}
+  60%     {box-shadow:0 0 0 10px rgba(167,2,140,0);}
+}
+@keyframes checkout-slide {
+  0%   {background-position:100% 0;}
+  100% {background-position:0 0;}
+}
+
+.btn-primary {
+  background:linear-gradient(135deg,var(--accent),var(--accentL));
+  background-size:200% auto;
+  transition:all .25s ease,transform .15s ease;
+  position:relative;overflow:hidden;
+}
+.btn-primary::after {
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.18) 50%,transparent 100%);
+  background-size:200% 100%;background-position:200% 0;
+  transition:background-position .5s ease;pointer-events:none;
+}
+.btn-primary:hover {
+  transform:translateY(-2px);
+  box-shadow:0 6px 24px rgba(167,2,140,.45);
+  animation:btn-pulse-glow 2s ease infinite;
+}
+.btn-primary:hover::after {background-position:-200% 0;}
+.btn-primary:active {
+  transform:scale(.97) translateY(0);
+  animation:btn-bounce-in .3s ease both;
+}
+/* Clock In button special pulse */
+#checkInBtn:not(:disabled) {animation:checkin-pulse 2.4s ease infinite;}
+#checkInBtn:not(:disabled):hover {animation:btn-pulse-glow 1.5s ease infinite;}
+
+.btn-secondary {
+  transition:all .25s ease,transform .15s ease;
+  position:relative;overflow:hidden;
+}
+.btn-secondary:hover:not(:disabled) {
+  border-color:var(--accent);color:var(--accentL);
+  transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+.btn-secondary:active:not(:disabled) {transform:scale(.97);}
+
+.btn-danger {transition:all .25s ease,transform .15s ease;}
+.btn-danger:hover {
+  transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(255,56,96,.4);filter:brightness(1.1);
+}
+.btn-danger:active {animation:btn-danger-shake .35s ease both;}
+
+/* Leave submit button */
+.leave-btn {
+  transition:all .25s ease,transform .15s ease;
+  position:relative;overflow:hidden;
+}
+.leave-btn:hover {
+  background:rgba(168,85,247,.18);
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(168,85,247,.25);
+}
+.leave-btn:active {transform:scale(.97);}
+
+/* Bottom nav item animation */
+.nav-item {transition:color .2s ease,transform .15s ease;}
+.nav-item:active {transform:scale(.88);}
+.nav-item.active .nav-icon {
+  display:inline-block;
+  animation:btn-bounce-in .35s ease both;
+}
+
 /* ═══ DESKTOP OVERRIDES (≥ 768px) ═══════════════════════ */
 @media(min-width:768px){
   .emp-content{
@@ -242,8 +350,8 @@ svg.ring{transform:rotate(-90deg);}
 <body>
 
 <!-- ══════════ LOGIN ══════════ -->
-<div id="loginScreen" class="screen active">
-  <div class="login-box">
+<div id="loginScreen" class="screen active visible-section">
+  <div class="login-box gb-popup-scale-blur">
     <div class="brand">
       <img src="hi.png" alt="Hydra Infotech" class="brand-logo"/>
       <p class="mono">Employee Portal</p>
@@ -279,7 +387,7 @@ svg.ring{transform:rotate(-90deg);}
   </div>
 
   <!-- Scrollable content -->
-  <div class="emp-content" id="empContent">
+  <div class="emp-content gb-popup-scale-blur" id="empContent">
 
     <!-- TAB: Home (Clock + Timer) -->
     <div class="tab-panel active" id="tab-home-1">
@@ -442,7 +550,21 @@ function doLogout(){
   document.getElementById('loginId').value='';document.getElementById('loginPass').value='';
   checkServer();
 }
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.remove('active','visible-section');
+  });
+  const el=document.getElementById(id);
+  el.classList.add('active');
+  requestAnimationFrame(()=>{
+    el.classList.add('visible-section');
+    el.querySelectorAll('.gb-popup-scale-blur').forEach(el=>{
+      el.style.animation='none';
+      el.offsetHeight;
+      el.style.animation='';
+    });
+  });
+}
 
 // ── Init dashboard ─────────────────────────────────────────
 async function initDashboard(){
