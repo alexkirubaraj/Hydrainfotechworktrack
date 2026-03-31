@@ -153,7 +153,7 @@ app.put('/api/settings', (req,res)=>{
 
 // ================= LEAVES =================
 // ================= LEAVES =================
-let leaves = [];
+
 
 // Get ALL leaves (admin)
 app.get('/api/leaves', (req,res)=>{
