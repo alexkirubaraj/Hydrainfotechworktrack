@@ -207,21 +207,15 @@ svg.ring{transform:rotate(-90deg);}
 <div class="toast" id="toast"><span id="toastIcon">✅</span><span id="toastMsg">—</span></div>
 
 <script>
-const SERVER = window.location.hostname === 'localhost' || window.location.hostname.match(/^\d/)
-  ? `${window.location.protocol}//${window.location.host}`
-  : 'http://localhost:3000';
+const SERVER = window.location.origin;
 
 async function api(method, path, data) {
-  try {
-    const r = await fetch(SERVER + path, {
-      method,
-      headers:{'Content-Type':'application/json'},
-      body: data ? JSON.stringify(data) : undefined
-    });
-    return await r.json();
-  } catch(e) {
-    return [];
-  }
+  const res = await fetch(SERVER + path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: data ? JSON.stringify(data) : undefined
+  });
+  return await res.json();
 }
 
 let session  = {};
