@@ -102,6 +102,97 @@ svg.ring{transform:rotate(-90deg);}
   margin: 0 auto 16px auto; /* Centers the image and adds space below it */
   border-radius: 8px; /* Optional: smooths the corners slightly to blend with the dark background */
 }
+/* ================= MOBILE RESPONSIVE ================= */
+@media (max-width: 768px) {
+
+  body {
+    padding: 10px;
+  }
+
+  /* Header */
+  .topbar, .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Menu button */
+  .menu-btn {
+    display: block;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 10px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    width: 220px;
+    height: 100%;
+    background: #111;
+    transition: 0.3s;
+    z-index: 999;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  /* Main content full */
+  .main, .main-content {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  /* Stack layout */
+  .dashboard, .row, .grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  /* Cards full width */
+  .card {
+    width: 100% !important;
+  }
+
+  /* Clock section */
+  .clock-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+
+  /* Buttons */
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+  }
+
+  /* Inputs */
+  input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  /* Tables scroll */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* Popup modal */
+  .modal {
+    width: 95% !important;
+    padding: 20px;
+  }
+
+}
 </style>
 </head>
 <body>
@@ -109,7 +200,7 @@ svg.ring{transform:rotate(-90deg);}
 <div id="loginScreen" class="screen active">
   <div class="login-box">
     <div class="brand">
-      <img src="hydra.jpg" alt="Hydra Infotech Logo" class="brand-logo" />
+      <img src="hi.png" alt="Hydra Infotech Logo" class="brand-logo" />
       <p class="mono">Employee Panel</p>
     </div>
     <div class="server-status">
@@ -139,6 +230,7 @@ svg.ring{transform:rotate(-90deg);}
       <span class="status-pill pill-out" id="statusPill">● OFFLINE</span>
       <button class="btn btn-secondary btn-sm" onclick="doLogout()">Logout</button>
     </div>
+    <div class="menu-btn" onclick="toggleMenu()">☰</div>
   </div>
 
   <div class="emp-content">
@@ -573,6 +665,12 @@ function showToast(icon, msg) {
   const t = document.getElementById('toast');
   t.classList.add('show');
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+function toggleMenu() {
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    sidebar.classList.toggle('active');
+  }
 }
 </script>
 </body>
