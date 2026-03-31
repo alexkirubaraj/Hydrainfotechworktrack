@@ -38,9 +38,9 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
 .brand{text-align:center;margin-bottom:32px;}
 .brand-logo{max-width:200px;height:auto;display:block;margin:0 auto 14px;border-radius:8px;}
-.brand p{color:var(--muted);font-size:13px;font-family:'DM Mono',monospace;}
+.brand p{color:var();font-size:13px;font-family:'DM Mono',monospace;}
 .field{margin-bottom:16px;}
-.field label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var();margin-bottom:8px;}
 .field input,.field select{
   width:100%;padding:13px 16px;background:var(--surface2);border:1px solid var(--border);
   border-radius:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:16px;/* 16px prevents iOS zoom */
@@ -354,7 +354,7 @@ svg.ring{transform:rotate(-90deg);}
   <div class="login-box gb-popup-scale-blur">
     <div class="brand">
       <img src="hi.png" alt="Hydra Infotech" class="brand-logo"/>
-      <p class="mono">Employee Portal</p>
+      <p class="mono">EMPLOYEE</p>
     </div>
     <div class="server-status">
       <div class="s-dot" id="sDot"></div>
@@ -362,7 +362,7 @@ svg.ring{transform:rotate(-90deg);}
     </div>
     <div class="field">
       <label>Employee ID</label>
-      <input type="text" id="loginId" placeholder="e.g. EMP001" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <input type="text" id="loginId" placeholder="Enter your ID" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
     <div class="field">
       <label>Password</label>
