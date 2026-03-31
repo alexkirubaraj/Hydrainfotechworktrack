@@ -96,12 +96,12 @@ app.get('/employee', (req,res)=>{
 app.post('/api/auth/admin', (req, res) => {
   const { username, password } = req.body;
 
-  if (username === 'admin' && password === 'admin123') {
-    return res.json({ ok:true, name:'Admin', username:'admin' });
+  if (username === 'Vivin' && password === 'Vivin1234') {
+    return res.json({ ok:true, name:'Vivin', username:'Vivin' });
   }
 
-  if (username === 'admin2' && password === 'admin456') {
-    return res.json({ ok:true, name:'Admin 2', username:'admin2' });
+  if (username === 'Alex' && password === 'Alex4321') {
+    return res.json({ ok:true, name:'Alex', username:'Alex' });
   }
 
   res.status(401).json({ ok:false, error:'Invalid credentials' });
