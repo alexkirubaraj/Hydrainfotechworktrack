@@ -622,7 +622,7 @@ async function refresh(){
   if(!(activity||[]).length){feed.innerHTML='<p style="color:var(--muted);font-size:13px;">No activity yet today.</p>';}
   else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.status==='late'?' · LATE':' · On Time'}`:`OUT · ${a.duration||''}`}</div></div><div class="act-time">${a.time}</div></div>`).join('');
 
-  document.getElementById('empTable').innerHTML=(emps||[]).map(e=>`<tr><td><strong>${e.name}</strong></td><td class="td-mono">${e.id}</td><td>${e.dept||'—'}</td><td style="font-size:11px;">${e.email||'—'}</td><td class="td-mono">${e.password?'••••':'-'}</td><td><div class="action-btns"><button class="btn btn-danger btn-sm" onclick="removeEmployee('${e.id}')">Remove</button></div></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No employees</td></tr>';
+  document.getElementById('empTable').innerHTML=(emps||[]).map(e=>`<tr><td><strong>${e.name}</strong></td><td class="td-mono">${e.id}</td><td>${e.dept||'—'}</td><td style="font-size:11px;">${e.email||'—'}</td><td class="td-mono">${e.password||'—'}</td><td><div class="action-btns"><button class="btn btn-danger btn-sm" onclick="removeEmployee('${e.id}')">Remove</button></div></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No employees</td></tr>';
 
   const sorted=[...(att||[])].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('attTable').innerHTML=sorted.map(r=>{
