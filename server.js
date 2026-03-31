@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ================= MONGODB =================
 mongoose.connect(process.env.MONGO_URI)
@@ -72,11 +72,11 @@ function secsToStr(secs) {
 app.get('/', (req,res)=>res.redirect('/employee'));
 
 app.get('/admin', (req,res)=>{
-  res.sendFile(path.join(__dirname,'admin.html'));
+  res.sendFile(path.join(__dirname,'public','admin.html'));
 });
 
 app.get('/employee', (req,res)=>{
-  res.sendFile(path.join(__dirname,'employee.html'));
+  res.sendFile(path.join(__dirname,'public','employee.html'));
 });
 
 // ================= AUTH =================
