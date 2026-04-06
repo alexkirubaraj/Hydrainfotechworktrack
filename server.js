@@ -26,13 +26,7 @@ const Attendance = mongoose.model('Attendance', new mongoose.Schema({
   empId: String,
   name: String,
   date: String,
-  sessions: [
-    {
-      in: String,
-      out: String,
-      lateNote: String
-    }
-  ],
+  sessions: [{ in: String, out: String, lateNote: String }],
   totalWork: String,
   status: String
 }));
@@ -45,30 +39,28 @@ const Activity = mongoose.model('Activity', new mongoose.Schema({
   date: String
 }));
 
-// ✅ FIX 1: Settings stored in MongoDB (persists across restarts)
-const SettingsSchema = new mongoose.Schema({
-  key: { type: String, default: 'main' },
+// FIX: key field is required (not default) so findOne({key:'main'}) always works
+const Settings = mongoose.model('Settings', new mongoose.Schema({
+  key:       { type: String, required: true, unique: true },
   workHours: { type: Number, default: 9 },
   startTime: { type: String, default: '09:30' },
-  endTime: { type: String, default: '18:30' },
+  endTime:   { type: String, default: '18:30' },
   graceMins: { type: Number, default: 15 },
   breakMins: { type: Number, default: 45 }
-});
-const Settings = mongoose.model('Settings', SettingsSchema);
+}));
 
-// ✅ FIX 2: Leaves stored in MongoDB (persists across restarts)
-const LeaveSchema = new mongoose.Schema({
-  id: { type: String, default: () => Date.now().toString() },
-  empId: String,
-  name: String,
-  type: String,
-  from: String,
-  to: String,
-  reason: String,
-  status: { type: String, default: 'pending' },
-  applied: { type: String, default: () => new Date().toISOString().split('T')[0] }
-});
-const Leave = mongoose.model('Leave', LeaveSchema);
+// FIX: renamed 'id' → 'leaveId' to avoid conflict with Mongoose's built-in id virtual
+const Leave = mongoose.model('Leave', new mongoose.Schema({
+  leaveId:  { type: String },
+  empId:    String,
+  name:     String,
+  type:     String,
+  from:     String,
+  to:       String,
+  reason:   String,
+  status:   { type: String, default: 'pending' },
+  applied:  String
+}));
 
 // ================= HELPERS =================
 function today() {
@@ -93,234 +85,226 @@ function secsToStr(secs) {
   return `${h}h ${String(m).padStart(2,'0')}m`;
 }
 
-// Helper: get or create settings doc
+// Get or create the single settings document
 async function getSettings() {
   let s = await Settings.findOne({ key: 'main' });
   if (!s) {
-    s = await Settings.create({ key: 'main' });
+    s = await Settings.create({
+      key: 'main', workHours: 9, startTime: '09:30',
+      endTime: '18:30', graceMins: 15, breakMins: 45
+    });
+    console.log('✅ Default settings created in MongoDB');
   }
   return s;
 }
 
 // ================= ROUTES =================
-
-// Pages
-app.get('/', (req,res)=>res.redirect('/employee'));
-
-app.get('/admin', (req,res)=>{
-  res.sendFile(path.join(__dirname,'public','admin.html'));
-});
-
-app.get('/employee', (req,res)=>{
-  res.sendFile(path.join(__dirname,'public','employee.html'));
-});
+app.get('/', (req,res) => res.redirect('/employee'));
+app.get('/admin', (req,res) => res.sendFile(path.join(__dirname,'public','admin.html')));
+app.get('/employee', (req,res) => res.sendFile(path.join(__dirname,'public','employee.html')));
 
 // ================= AUTH =================
 app.post('/api/auth/admin', (req, res) => {
   const { username, password } = req.body;
-
-  if (username === 'Vivin' && password === 'Vivin1234') {
+  if (username === 'Vivin' && password === 'Vivin1234')
     return res.json({ ok:true, name:'Vivin', username:'Vivin' });
-  }
-
-  if (username === 'Alex' && password === 'Alex4321') {
+  if (username === 'Alex' && password === 'Alex4321')
     return res.json({ ok:true, name:'Alex', username:'Alex' });
-  }
-
   res.status(401).json({ ok:false, error:'Invalid credentials' });
 });
 
-app.post('/api/auth/employee', async (req,res)=>{
+app.post('/api/auth/employee', async (req,res) => {
   const { empId, password } = req.body;
-
   const user = await Employee.findOne({ id: empId });
-
-  if (!user || user.password !== password) {
+  if (!user || user.password !== password)
     return res.status(401).json({ ok:false, error:'Invalid credentials' });
-  }
-
   res.json({ ok:true, emp:user });
 });
 
 // ================= EMPLOYEES =================
-app.get('/api/employees', async (req,res)=>{
-  const data = await Employee.find();
-  res.json(data);
+app.get('/api/employees', async (req,res) => {
+  res.json(await Employee.find());
 });
 
-app.post('/api/employees', async (req,res)=>{
+app.post('/api/employees', async (req,res) => {
   const { id, name, dept, email, password } = req.body;
-
-  if (!id || !name || !dept || !email || !password) {
+  if (!id || !name || !dept || !email || !password)
     return res.status(400).json({ error:'All fields required' });
-  }
-
-  const exists = await Employee.findOne({ id });
-  if (exists) return res.status(400).json({ error:'ID exists' });
-
-  const emp = new Employee({ id, name, dept, email, password });
-  await emp.save();
-
+  if (await Employee.findOne({ id }))
+    return res.status(400).json({ error:'ID exists' });
+  await new Employee({ id, name, dept, email, password }).save();
   res.json({ ok:true });
 });
 
-app.delete('/api/employees/:id', async (req,res)=>{
+app.delete('/api/employees/:id', async (req,res) => {
   try {
     const result = await Employee.deleteOne({ id: req.params.id });
-
-    if (result.deletedCount === 0) {
+    if (result.deletedCount === 0)
       return res.status(404).json({ error:'Employee not found' });
-    }
-
     res.json({ ok:true });
-
-  } catch (err) {
+  } catch(err) {
     res.status(500).json({ error:'Server error' });
   }
 });
 
-// ================= SETTINGS (✅ NOW PERSISTED IN MONGODB) =================
-app.get('/api/settings', async (req,res)=>{
-  const s = await getSettings();
-  res.json({
-    workHours: s.workHours,
-    startTime: s.startTime,
-    endTime: s.endTime,
-    graceMins: s.graceMins,
-    breakMins: s.breakMins
-  });
+// ================= SETTINGS — persisted in MongoDB =================
+app.get('/api/settings', async (req,res) => {
+  try {
+    const s = await getSettings();
+    res.json({
+      workHours: s.workHours, startTime: s.startTime,
+      endTime: s.endTime, graceMins: s.graceMins, breakMins: s.breakMins
+    });
+  } catch(err) {
+    console.error('GET /api/settings error:', err);
+    res.status(500).json({ error: 'Could not load settings' });
+  }
 });
 
-app.put('/api/settings', async (req,res)=>{
-  const { workHours, startTime, endTime, graceMins, breakMins } = req.body;
-  const s = await Settings.findOneAndUpdate(
-    { key: 'main' },
-    { workHours, startTime, endTime, graceMins, breakMins },
-    { new: true, upsert: true }
-  );
-  res.json({
-    workHours: s.workHours,
-    startTime: s.startTime,
-    endTime: s.endTime,
-    graceMins: s.graceMins,
-    breakMins: s.breakMins
-  });
+app.put('/api/settings', async (req,res) => {
+  try {
+    const { workHours, startTime, endTime, graceMins, breakMins } = req.body;
+    // FIX: use $set so the 'key' field is never overwritten
+    const s = await Settings.findOneAndUpdate(
+      { key: 'main' },
+      { $set: { workHours, startTime, endTime, graceMins, breakMins } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+    console.log('✅ Settings saved:', s.workHours, 'hrs,', s.startTime, '-', s.endTime);
+    res.json({
+      workHours: s.workHours, startTime: s.startTime,
+      endTime: s.endTime, graceMins: s.graceMins, breakMins: s.breakMins
+    });
+  } catch(err) {
+    console.error('PUT /api/settings error:', err);
+    res.status(500).json({ error: 'Could not save settings' });
+  }
 });
 
-// ================= LEAVES (✅ NOW PERSISTED IN MONGODB) =================
-app.get('/api/leaves', async (req,res)=>{
-  const data = await Leave.find().sort({ id: -1 });
-  res.json(data);
+// ================= LEAVES — persisted in MongoDB =================
+
+// FIX: map leaveId → id so the frontend still sees { id: "..." }
+function formatLeave(l) {
+  return {
+    id:      l.leaveId,
+    empId:   l.empId,
+    name:    l.name,
+    type:    l.type,
+    from:    l.from,
+    to:      l.to,
+    reason:  l.reason,
+    status:  l.status,
+    applied: l.applied
+  };
+}
+
+app.get('/api/leaves', async (req,res) => {
+  const data = await Leave.find().sort({ _id: -1 });
+  res.json(data.map(formatLeave));
 });
 
-app.get('/api/leaves/:empId', async (req,res)=>{
-  const data = await Leave.find({ empId: req.params.empId }).sort({ id: -1 });
-  res.json(data);
+app.get('/api/leaves/:empId', async (req,res) => {
+  const data = await Leave.find({ empId: req.params.empId }).sort({ _id: -1 });
+  res.json(data.map(formatLeave));
 });
 
-app.post('/api/leaves', async (req,res)=>{
-  const leave = new Leave({
-    id: Date.now().toString(),
-    ...req.body,
-    status: 'pending',
-    applied: today()
-  });
-  await leave.save();
-  res.json({ ok:true });
+app.post('/api/leaves', async (req,res) => {
+  try {
+    const leaveId = Date.now().toString();
+    const leave = new Leave({
+      leaveId,
+      empId:   req.body.empId,
+      name:    req.body.name,
+      type:    req.body.type,
+      from:    req.body.from,
+      to:      req.body.to,
+      reason:  req.body.reason,
+      status:  'pending',
+      applied: today()
+    });
+    await leave.save();
+    console.log('✅ Leave saved, leaveId:', leaveId);
+    res.json({ ok:true });
+  } catch(err) {
+    console.error('POST /api/leaves error:', err);
+    res.status(500).json({ error: 'Could not save leave request' });
+  }
 });
 
-app.put('/api/leaves/:id', async (req,res)=>{
-  await Leave.findOneAndUpdate(
-    { id: req.params.id },
-    { status: req.body.status }
-  );
-  res.json({ ok:true });
+app.put('/api/leaves/:id', async (req,res) => {
+  try {
+    await Leave.findOneAndUpdate(
+      { leaveId: req.params.id },
+      { $set: { status: req.body.status } }
+    );
+    res.json({ ok:true });
+  } catch(err) {
+    console.error('PUT /api/leaves error:', err);
+    res.status(500).json({ error: 'Could not update leave' });
+  }
 });
 
 // ================= ATTENDANCE =================
-app.get('/api/attendance', async (req,res)=>{
+app.get('/api/attendance', async (req,res) => {
   const data = await Attendance.find().sort({ date: -1 });
   res.json(data);
 });
 
-app.get('/api/attendance/:empId', async (req,res)=>{
+app.get('/api/attendance/:empId', async (req,res) => {
   const data = await Attendance.find({ empId: req.params.empId });
   res.json(data);
 });
 
 // ================= CHECK-IN =================
-app.post('/api/checkin', async (req,res)=>{
-  const { empId,name,checkIn,status } = req.body;
+app.post('/api/checkin', async (req,res) => {
+  const { empId, name, checkIn, status } = req.body;
   const date = today();
 
-  let rec = await Attendance.findOne({ empId,date });
-
+  let rec = await Attendance.findOne({ empId, date });
   if (!rec) {
     rec = new Attendance({
-      empId,
-      name,
-      date,
-      sessions: [],
-      totalWork: '0h 00m',
-      status: status || 'present'
+      empId, name, date, sessions: [],
+      totalWork: '0h 00m', status: status || 'present'
     });
   }
 
-  const open = rec.sessions.find(s=>s.in && !s.out);
+  const open = rec.sessions.find(s => s.in && !s.out);
   if (open) return res.json({ error:'Already clocked in' });
 
-  rec.sessions.push({ in:checkIn, out:null });
-
+  rec.sessions.push({ in: checkIn, out: null });
   await rec.save();
 
-  await Activity.create({
-    type:'checkin',
-    empId,
-    name,
-    time:checkIn,
-    date
-  });
-
+  await Activity.create({ type:'checkin', empId, name, time:checkIn, date });
   res.json({ ok:true });
 });
 
 // ================= CHECK-OUT =================
-app.post('/api/checkout', async (req,res)=>{
+app.post('/api/checkout', async (req,res) => {
   const { empId, checkOut } = req.body;
   const date = today();
 
-  const rec = await Attendance.findOne({ empId,date });
-
+  const rec = await Attendance.findOne({ empId, date });
   if (!rec) return res.json({ error:'No record' });
 
-  const open = rec.sessions.find(s=>s.in && !s.out);
+  const open = rec.sessions.find(s => s.in && !s.out);
   if (!open) return res.json({ error:'No active session' });
 
   open.out = checkOut;
-
   const total = calcTotalSeconds(rec.sessions);
   rec.totalWork = secsToStr(total);
-
   await rec.save();
 
-  await Activity.create({
-    type:'checkout',
-    empId,
-    name:rec.name,
-    time:checkOut,
-    date
-  });
-
+  await Activity.create({ type:'checkout', empId, name:rec.name, time:checkOut, date });
   res.json(rec);
 });
 
 // ================= ACTIVITY =================
-app.get('/api/activity', async (req,res)=>{
-  const data = await Activity.find().sort({_id:-1}).limit(100);
+app.get('/api/activity', async (req,res) => {
+  const data = await Activity.find().sort({ _id:-1 }).limit(100);
   res.json(data);
 });
 
 // ================= START =================
-app.listen(PORT, ()=>{
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
