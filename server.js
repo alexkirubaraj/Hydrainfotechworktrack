@@ -45,16 +45,30 @@ const Activity = mongoose.model('Activity', new mongoose.Schema({
   date: String
 }));
 
-// ================= TEMP DATA =================
-let settings = {
-  workHours: 9,
-  startTime: '09:30',
-  endTime: '18:30',
-  graceMins: 15,
-  breakMins: 45
-};
+// ✅ FIX 1: Settings stored in MongoDB (persists across restarts)
+const SettingsSchema = new mongoose.Schema({
+  key: { type: String, default: 'main' },
+  workHours: { type: Number, default: 9 },
+  startTime: { type: String, default: '09:30' },
+  endTime: { type: String, default: '18:30' },
+  graceMins: { type: Number, default: 15 },
+  breakMins: { type: Number, default: 45 }
+});
+const Settings = mongoose.model('Settings', SettingsSchema);
 
-let leaves = [];
+// ✅ FIX 2: Leaves stored in MongoDB (persists across restarts)
+const LeaveSchema = new mongoose.Schema({
+  id: { type: String, default: () => Date.now().toString() },
+  empId: String,
+  name: String,
+  type: String,
+  from: String,
+  to: String,
+  reason: String,
+  status: { type: String, default: 'pending' },
+  applied: { type: String, default: () => new Date().toISOString().split('T')[0] }
+});
+const Leave = mongoose.model('Leave', LeaveSchema);
 
 // ================= HELPERS =================
 function today() {
@@ -77,6 +91,15 @@ function secsToStr(secs) {
   const h = Math.floor(secs/3600);
   const m = Math.floor((secs%3600)/60);
   return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+// Helper: get or create settings doc
+async function getSettings() {
+  let s = await Settings.findOne({ key: 'main' });
+  if (!s) {
+    s = await Settings.create({ key: 'main' });
+  }
+  return s;
 }
 
 // ================= ROUTES =================
@@ -140,7 +163,7 @@ app.post('/api/employees', async (req,res)=>{
 
   res.json({ ok:true });
 });
-// DELETE employee (🔥 FIX)
+
 app.delete('/api/employees/:id', async (req,res)=>{
   try {
     const result = await Employee.deleteOne({ id: req.params.id });
@@ -156,48 +179,65 @@ app.delete('/api/employees/:id', async (req,res)=>{
   }
 });
 
-// ================= SETTINGS =================
-app.get('/api/settings', (req,res)=>{
-  res.json(settings);
+// ================= SETTINGS (✅ NOW PERSISTED IN MONGODB) =================
+app.get('/api/settings', async (req,res)=>{
+  const s = await getSettings();
+  res.json({
+    workHours: s.workHours,
+    startTime: s.startTime,
+    endTime: s.endTime,
+    graceMins: s.graceMins,
+    breakMins: s.breakMins
+  });
 });
 
-app.put('/api/settings', (req,res)=>{
-  settings = req.body;
-  res.json(settings);
+app.put('/api/settings', async (req,res)=>{
+  const { workHours, startTime, endTime, graceMins, breakMins } = req.body;
+  const s = await Settings.findOneAndUpdate(
+    { key: 'main' },
+    { workHours, startTime, endTime, graceMins, breakMins },
+    { new: true, upsert: true }
+  );
+  res.json({
+    workHours: s.workHours,
+    startTime: s.startTime,
+    endTime: s.endTime,
+    graceMins: s.graceMins,
+    breakMins: s.breakMins
+  });
 });
 
-// ================= LEAVES =================
-app.get('/api/leaves', (req,res)=>{
-  res.json(leaves);
-});
-
-app.get('/api/leaves/:empId', (req,res)=>{
-  const data = leaves.filter(l => l.empId === req.params.empId);
+// ================= LEAVES (✅ NOW PERSISTED IN MONGODB) =================
+app.get('/api/leaves', async (req,res)=>{
+  const data = await Leave.find().sort({ id: -1 });
   res.json(data);
 });
 
-app.post('/api/leaves', (req,res)=>{
-  const leave = {
+app.get('/api/leaves/:empId', async (req,res)=>{
+  const data = await Leave.find({ empId: req.params.empId }).sort({ id: -1 });
+  res.json(data);
+});
+
+app.post('/api/leaves', async (req,res)=>{
+  const leave = new Leave({
     id: Date.now().toString(),
     ...req.body,
-    status: 'pending'
-  };
-
-  leaves.push(leave);
+    status: 'pending',
+    applied: today()
+  });
+  await leave.save();
   res.json({ ok:true });
 });
 
-app.put('/api/leaves/:id', (req,res)=>{
-  leaves = leaves.map(l =>
-    l.id === req.params.id
-      ? { ...l, status: req.body.status }
-      : l
+app.put('/api/leaves/:id', async (req,res)=>{
+  await Leave.findOneAndUpdate(
+    { id: req.params.id },
+    { status: req.body.status }
   );
-
   res.json({ ok:true });
 });
 
-// ================= ATTENDANCE (🔥 FIX ADDED) =================
+// ================= ATTENDANCE =================
 app.get('/api/attendance', async (req,res)=>{
   const data = await Attendance.find().sort({ date: -1 });
   res.json(data);

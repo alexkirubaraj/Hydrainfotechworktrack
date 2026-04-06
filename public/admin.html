@@ -513,6 +513,17 @@ async function api(method,path,data){
   catch(e){return{error:e.message};}
 }
 
+// ── 12-hour time helper ──────────────────────────────────────
+function to12hr(t){
+  if(!t||t==='—'||t==='…'||t==='--')return t||'—';
+  const [hStr,mStr]=t.split(':');
+  let h=parseInt(hStr),m=mStr||'00';
+  if(isNaN(h))return t;
+  const ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return `${h}:${m} ${ampm}`;
+}
+
 let session={},pollInterval=null,settings={};
 
 // ── Sidebar ──────────────────────────────────────────────
@@ -579,8 +590,8 @@ async function loadSettings(){
     document.getElementById('setBreak').value=s.breakMins||45;
     document.getElementById('currentSettings').innerHTML=
       `Hours: <strong style="color:var(--accentL)">${s.workHours}h / day</strong><br>
-       Start: <strong style="color:var(--accentL)">${s.startTime}</strong><br>
-       End: <strong style="color:var(--accentL)">${s.endTime}</strong><br>
+       Start: <strong style="color:var(--accentL)">${to12hr(s.startTime)}</strong><br>
+       End: <strong style="color:var(--accentL)">${to12hr(s.endTime)}</strong><br>
        Grace: <strong style="color:var(--accentL)">${s.graceMins} mins</strong><br>
        Break: <strong style="color:var(--accentL)">${s.breakMins||45} mins</strong>`;
   }
@@ -612,7 +623,7 @@ async function refresh(){
     const sessions=r?.sessions||[];
     let sessLine='—',lateWarn='';
     if(sessions.length>0){
-      sessLine=sessions.map((s,i)=>`<span style="font-family:'DM Mono',monospace;font-size:11px;">S${i+1}:${s.in||'—'}→${s.out||'…'}</span>`).join('<br>');
+      sessLine=sessions.map((s,i)=>`<span style="font-family:'DM Mono',monospace;font-size:11px;">S${i+1}:${to12hr(s.in||'—')}→${to12hr(s.out||'…')}</span>`).join('<br>');
       if(sessions.length>=2&&sessions[1].lateNote)lateWarn=`<br><span style="color:var(--warn);font-size:10px;">⚠ ${sessions[1].lateNote}</span>`;
     }
     const status=r?.status||'absent';
@@ -621,14 +632,14 @@ async function refresh(){
 
   const feed=document.getElementById('actFeed');
   if(!(activity||[]).length){feed.innerHTML='<p style="color:var(--muted);font-size:13px;">No activity yet today.</p>';}
-  else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.status==='late'?' · LATE':' · On Time'}`:`OUT · ${a.duration||''}`}</div></div><div class="act-time">${a.time}</div></div>`).join('');
+  else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.status==='late'?' · LATE':' · On Time'}`:`OUT · ${a.duration||''}`}</div></div><div class="act-time">${to12hr(a.time)}</div></div>`).join('');
 
   document.getElementById('empTable').innerHTML=(emps||[]).map(e=>`<tr><td><strong>${e.name}</strong></td><td class="td-mono">${e.id}</td><td>${e.dept||'—'}</td><td style="font-size:11px;">${e.email||'—'}</td><td class="td-mono">${e.password||'—'}</td><td><div class="action-btns"><button class="btn btn-danger btn-sm" onclick="removeEmployee('${e.id}')">Remove</button></div></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No employees</td></tr>';
 
   const sorted=[...(att||[])].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('attTable').innerHTML=sorted.map(r=>{
     const sessions=r.sessions||[];
-    const sessLine=sessions.length?sessions.map((s,i)=>`S${i+1}:${s.in||'—'}→${s.out||'…'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
+    const sessLine=sessions.length?sessions.map((s,i)=>`S${i+1}:${to12hr(s.in||'—')}→${to12hr(s.out||'…')}`).join(' | '):`${to12hr(r.checkIn||'—')}→${to12hr(r.checkOut||'—')}`;
     const lateNote=(sessions.length>=2&&sessions[1].lateNote)?` ⚠ ${sessions[1].lateNote}`:'';
     return`<tr><td class="td-mono" style="white-space:nowrap;">${r.date}</td><td>${r.name||r.empId}</td><td class="td-mono" style="font-size:11px;">${sessLine}${lateNote?`<br><span style="color:var(--warn);font-size:10px;">${lateNote}</span>`:''}</td><td class="td-mono" style="white-space:nowrap;">${r.totalWork||r.duration||'—'}</td><td><span class="att-badge badge-${r.status}">${r.status}</span></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No records</td></tr>';

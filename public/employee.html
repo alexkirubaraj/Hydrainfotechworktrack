@@ -500,6 +500,17 @@ async function api(method,path,data){
 }
 
 // ── State ──────────────────────────────────────────────────
+// ── 12-hour time helper ──────────────────────────────────────
+function to12hr(t){
+  if(!t||t==='—'||t==='…'||t==='--')return t||'—';
+  const [hStr,mStr]=t.split(':');
+  let h=parseInt(hStr),m=mStr||'00';
+  if(isNaN(h))return t;
+  const ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return `${h}:${m} ${ampm}`;
+}
+
 let session={},settings={workHours:9,startTime:'09:30',endTime:'18:30',graceMins:15};
 let timerInterval=null,clockInterval=null,checkInTs=null;
 let sessionCount=0,totalWorkedSecs=0;
@@ -597,7 +608,7 @@ function checkNotice(now){
   const [sh,sm]=settings.startTime.split(':').map(Number);
   const [eh,em]=settings.endTime.split(':').map(Number);
   const startMin=sh*60+sm,endMin=eh*60+em,nowMin=now.getHours()*60+now.getMinutes();
-  if(nowMin<startMin){box.innerHTML=`<div class="emp-notice info">🕘 Opens at ${settings.startTime}</div>`;return;}
+  if(nowMin<startMin){box.innerHTML=`<div class="emp-notice info">🕘 Opens at ${to12hr(settings.startTime)}</div>`;return;}
   if(nowMin>=startMin&&nowMin<=startMin+settings.graceMins&&sessionCount===0&&!checkInTs){box.innerHTML=`<div class="emp-notice default">⚡ On time! Clock in now.</div>`;return;}
   if(checkInTs){box.innerHTML=`<div class="emp-notice default">✅ Session ${sessionCount} in progress</div>`;return;}
   if(!checkInTs){
@@ -624,8 +635,8 @@ async function checkIn(){
   document.getElementById('sessionLabel').textContent=`${sessionCount} of 2`;
   updateSessionChips(res.rec);startTimer();
   if(res.lateMsg)showToast('⚠️',res.lateMsg);
-  else if(sessionCount===2)showToast('✅',`Session 2 started at ${checkInStr}`);
-  else showToast('✅',`Clocked in at ${checkInStr}${status==='late'?' (Late)':''}`);
+  else if(sessionCount===2)showToast('✅',`Session 2 started at ${to12hr(checkInStr)}`);
+  else showToast('✅',`Clocked in at ${to12hr(checkInStr)}${status==='late'?' (Late)':''}`);
 }
 
 // ── Clock Out ───────────────────────────────────────────────
@@ -673,7 +684,7 @@ function startTimer(){
 function updateSessionChips(rec){
   const chips=document.getElementById('sessionChips');
   if(!rec||!rec.sessions){chips.innerHTML='';return;}
-  chips.innerHTML=rec.sessions.map((s,i)=>`<span class="session-chip ${!s.out?'active':''}">S${i+1}: ${s.in}→${s.out||'now'}</span>`).join('');
+  chips.innerHTML=rec.sessions.map((s,i)=>`<span class="session-chip ${!s.out?'active':''}">S${i+1}: ${to12hr(s.in)}→${s.out?to12hr(s.out):'now'}</span>`).join('');
 }
 function fmt(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
 function setPill(state){
@@ -692,7 +703,7 @@ async function loadHistoryAndState(){
   else{
     const sorted=[...rows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
     el.innerHTML=sorted.map(r=>{
-      const st=r.sessions?r.sessions.map(s=>`${s.in}→${s.out||'--'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
+      const st=r.sessions?r.sessions.map(s=>`${to12hr(s.in)}→${s.out?to12hr(s.out):'--'}`).join(' | '):`${to12hr(r.checkIn||'—')}→${to12hr(r.checkOut||'—')}`;
       const tot=r.totalWork||r.duration||'—';
       return`<div class="att-row"><span class="att-date">${r.date}</span><span class="att-sessions">${st}</span><span style="font-family:'DM Mono',monospace;font-size:11px;">${tot}</span><span class="att-badge badge-${r.status||'absent'}">${r.status||'absent'}</span></div>`;
     }).join('');
