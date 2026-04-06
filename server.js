@@ -42,9 +42,9 @@ const Activity = mongoose.model('Activity', new mongoose.Schema({
 // FIX: key field is required (not default) so findOne({key:'main'}) always works
 const Settings = mongoose.model('Settings', new mongoose.Schema({
   key:       { type: String, required: true, unique: true },
-  workHours: { type: Number, default: 9 },
+  workHours: { type: Number, default: 8 },
   startTime: { type: String, default: '09:30' },
-  endTime:   { type: String, default: '18:30' },
+  endTime:   { type: String, default: '18:15' },
   graceMins: { type: Number, default: 15 },
   breakMins: { type: Number, default: 45 }
 }));
@@ -90,8 +90,8 @@ async function getSettings() {
   let s = await Settings.findOne({ key: 'main' });
   if (!s) {
     s = await Settings.create({
-      key: 'main', workHours: 9, startTime: '09:30',
-      endTime: '18:30', graceMins: 15, breakMins: 45
+      key: 'main', workHours: 8, startTime: '09:30',
+      endTime: '18:15', graceMins: 15, breakMins: 45
     });
     console.log('✅ Default settings created in MongoDB');
   }
@@ -271,6 +271,22 @@ app.post('/api/checkin', async (req,res) => {
   const open = rec.sessions.find(s => s.in && !s.out);
   if (open) return res.json({ error:'Already clocked in' });
 
+  // Enforce 45-minute minimum break between sessions
+  if (rec.sessions.length >= 1) {
+    const settings = await Settings.findOne({ key: 'main' });
+    const breakMins = settings ? settings.breakMins : 45;
+    const lastSession = rec.sessions[rec.sessions.length - 1];
+    if (lastSession && lastSession.out) {
+      const [oh, om] = lastSession.out.split(':').map(Number);
+      const [ih, im] = checkIn.split(':').map(Number);
+      const breakTaken = (ih * 60 + im) - (oh * 60 + om);
+      if (breakTaken < breakMins) {
+        const remaining = breakMins - breakTaken;
+        return res.json({ error: `Break not complete. ${remaining} min(s) remaining (${breakMins}-min break required).` });
+      }
+    }
+  }
+
   rec.sessions.push({ in: checkIn, out: null });
   await rec.save();
 
@@ -292,6 +308,24 @@ app.post('/api/checkout', async (req,res) => {
   open.out = checkOut;
   const total = calcTotalSeconds(rec.sessions);
   rec.totalWork = secsToStr(total);
+
+  // Status logic:
+  // - Both sessions completed AND worked >= (workHours - breakMins) => 'present'
+  // - Only session 1 completed (clocked out before session 2) => 'half day present'
+  // - Late on session 1 check-in => keep 'late'
+  const settings = await Settings.findOne({ key: 'main' });
+  const targetSecs = (settings ? settings.workHours : 8) * 3600;
+  const breakSecs  = (settings ? settings.breakMins  : 45) * 60;
+  const completedSessions = rec.sessions.filter(s => s.in && s.out).length;
+
+  if (completedSessions >= 2 && total >= (targetSecs - breakSecs - 300)) {
+    // full day: both sessions done and enough hours worked (5min tolerance)
+    if (rec.status !== 'late') rec.status = 'present';
+  } else {
+    // only session 1 done, or insufficient hours
+    rec.status = 'half day present';
+  }
+
   await rec.save();
 
   await Activity.create({ type:'checkout', empId, name:rec.name, time:checkOut, date });
