@@ -135,6 +135,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .badge-late{background:rgba(255,107,53,.1);color:var(--warn);}
 .badge-holiday{background:rgba(168,85,247,.1);color:var(--holiday);}
 .badge-absent{background:rgba(255,56,96,.1);color:var(--danger);}
+.badge-half{background:rgba(255,107,53,.1);color:var(--warn);}
 
 /* ══ ACTIVITY FEED ═══════════════════════════════════════ */
 .activity-feed{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;}
@@ -442,7 +443,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <!-- Requests -->
       <div class="admin-panel" id="panel-requests">
         <div class="panel-header">
-          <div><div class="panel-title">Leave Requests</div><div class="panel-sub mono">Approve or reject</div></div>
+          <div><div class="panel-title">Leave Requests</div><div class="panel-sub mono">Employee requests (view only)</div></div>
         </div>
         <div class="req-list" id="reqList"></div>
       </div>
@@ -455,11 +456,16 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="settings-grid">
           <div class="setting-card">
             <h3>⏱ Configure</h3>
-            <div class="field"><label>Hours Per Day</label><input type="number" id="setWorkHours" min="1" max="24" step="0.5" placeholder="9"/></div>
-            <div class="field"><label>Start Time</label><input type="time" id="setStart"/></div>
-            <div class="field"><label>End Time</label><input type="time" id="setEnd"/></div>
+            <div class="field"><label>Shift Hours</label><input type="number" id="setWorkHours" min="1" max="24" step="0.5" placeholder="9"/></div>
+            <div class="field"><label>Shift Start</label><input type="time" id="setStart"/></div>
+            <div class="field"><label>Shift End</label><input type="time" id="setEnd"/></div>
             <div class="field"><label>Grace (mins)</label><input type="number" id="setGrace" min="0" max="60" placeholder="15"/></div>
             <div class="field"><label>Break (mins)</label><input type="number" id="setBreak" min="0" max="120" placeholder="45"/></div>
+            <div class="field"><label>Session 1 Start</label><input type="time" id="setSes1Start"/></div>
+            <div class="field"><label>Session 1 End</label><input type="time" id="setSes1End"/></div>
+            <div class="field"><label>Session 2 Start</label><input type="time" id="setSes2Start"/></div>
+            <div class="field"><label>Session 2 End</label><input type="time" id="setSes2End"/></div>
+            <div class="field"><label>Admin Phone (notifications)</label><input type="tel" id="setAdminPhone" placeholder="+91XXXXXXXXXX"/></div>
             <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
           </div>
           <div class="setting-card">
@@ -511,6 +517,17 @@ const SERVER=window.location.origin;
 async function api(method,path,data){
   try{const r=await fetch(SERVER+path,{method,headers:{'Content-Type':'application/json'},body:data?JSON.stringify(data):undefined});return await r.json();}
   catch(e){return{error:e.message};}
+}
+
+// ── 12-hour time helper ──────────────────────────────────────
+function to12hr(t){
+  if(!t||t==='—'||t==='…'||t==='--')return t||'—';
+  const [hStr,mStr]=t.split(':');
+  let h=parseInt(hStr),m=mStr||'00';
+  if(isNaN(h))return t;
+  const ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return `${h}:${m} ${ampm}`;
 }
 
 let session={},pollInterval=null,settings={};
@@ -577,16 +594,21 @@ async function loadSettings(){
     document.getElementById('setEnd').value=s.endTime;
     document.getElementById('setGrace').value=s.graceMins;
     document.getElementById('setBreak').value=s.breakMins||45;
+    if(document.getElementById('setSes1Start'))document.getElementById('setSes1Start').value=s.session1Start||'08:00';
+    if(document.getElementById('setSes1End'))document.getElementById('setSes1End').value=s.session1End||'12:45';
+    if(document.getElementById('setSes2Start'))document.getElementById('setSes2Start').value=s.session2Start||'13:30';
+    if(document.getElementById('setSes2End'))document.getElementById('setSes2End').value=s.session2End||'17:00';
+    if(document.getElementById('setAdminPhone'))document.getElementById('setAdminPhone').value=s.adminPhone||'';
     document.getElementById('currentSettings').innerHTML=
-      `Hours: <strong style="color:var(--accentL)">${s.workHours}h / day</strong><br>
-       Start: <strong style="color:var(--accentL)">${s.startTime}</strong><br>
-       End: <strong style="color:var(--accentL)">${s.endTime}</strong><br>
-       Grace: <strong style="color:var(--accentL)">${s.graceMins} mins</strong><br>
-       Break: <strong style="color:var(--accentL)">${s.breakMins||45} mins</strong>`;
+      `Shift: <strong style="color:var(--accentL)">${s.workHours}h</strong> (${to12hr(s.startTime)}&ndash;${to12hr(s.endTime)})<br>
+       S1: <strong style="color:var(--accentL)">${to12hr(s.session1Start||'08:00')}&ndash;${to12hr(s.session1End||'12:45')}</strong><br>
+       S2: <strong style="color:var(--accentL)">${to12hr(s.session2Start||'13:30')}&ndash;${to12hr(s.session2End||'17:00')}</strong><br>
+       Grace: <strong style="color:var(--accentL)">${s.graceMins} mins</strong> | Break: <strong style="color:var(--accentL)">${s.breakMins||45} mins</strong><br>
+       Admin Phone: <strong style="color:var(--accentL)">${s.adminPhone||'(not set)'}</strong>`;
   }
 }
 async function saveSettings(){
-  const s={workHours:parseFloat(document.getElementById('setWorkHours').value)||9,startTime:document.getElementById('setStart').value||'09:30',endTime:document.getElementById('setEnd').value||'18:30',graceMins:parseInt(document.getElementById('setGrace').value)||15,breakMins:parseInt(document.getElementById('setBreak').value)||45};
+  const s={workHours:parseFloat(document.getElementById('setWorkHours').value)||9,startTime:document.getElementById('setStart').value||'08:00',endTime:document.getElementById('setEnd').value||'17:00',graceMins:parseInt(document.getElementById('setGrace').value)||15,breakMins:parseInt(document.getElementById('setBreak').value)||45,session1Start:(document.getElementById('setSes1Start')||{}).value||'08:00',session1End:(document.getElementById('setSes1End')||{}).value||'12:45',session2Start:(document.getElementById('setSes2Start')||{}).value||'13:30',session2End:(document.getElementById('setSes2End')||{}).value||'17:00',adminPhone:(document.getElementById('setAdminPhone')||{}).value||''};
   const res=await api('PUT','/api/settings',s);
   if(res.error){showToast('❌','Failed to save.');return;}
   settings=res;await loadSettings();showToast('✅','Settings saved!');
@@ -600,19 +622,19 @@ async function refresh(){
   const todayAtt=(att||[]).filter(a=>a.date===today);
   const present=todayAtt.filter(a=>a.status==='present'||a.status==='late').length;
   const late=todayAtt.filter(a=>a.status==='late').length;
-  const pending=(leaves||[]).filter(r=>r.status==='pending').length;
+  const halfDay=todayAtt.filter(a=>a.status==='half day').length;
   document.getElementById('s-present').textContent=present;
   document.getElementById('s-total').textContent=(emps||[]).length;
   document.getElementById('s-late').textContent=late;
-  document.getElementById('s-pending').textContent=pending;
-  document.getElementById('notifDot').style.display=pending>0?'inline-block':'none';
+  document.getElementById('s-pending').textContent=halfDay;
+  // notifDot not used for leave approval
 
   document.getElementById('ovTable').innerHTML=(emps||[]).map(e=>{
     const r=todayAtt.find(a=>a.empId===e.id);
     const sessions=r?.sessions||[];
     let sessLine='—',lateWarn='';
     if(sessions.length>0){
-      sessLine=sessions.map((s,i)=>`<span style="font-family:'DM Mono',monospace;font-size:11px;">S${i+1}:${s.in||'—'}→${s.out||'…'}</span>`).join('<br>');
+      sessLine=sessions.map((s,i)=>`<span style="font-family:'DM Mono',monospace;font-size:11px;">S${i+1}:${to12hr(s.in||'—')}→${to12hr(s.out||'…')}</span>`).join('<br>');
       if(sessions.length>=2&&sessions[1].lateNote)lateWarn=`<br><span style="color:var(--warn);font-size:10px;">⚠ ${sessions[1].lateNote}</span>`;
     }
     const status=r?.status||'absent';
@@ -621,21 +643,21 @@ async function refresh(){
 
   const feed=document.getElementById('actFeed');
   if(!(activity||[]).length){feed.innerHTML='<p style="color:var(--muted);font-size:13px;">No activity yet today.</p>';}
-  else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.status==='late'?' · LATE':' · On Time'}`:`OUT · ${a.duration||''}`}</div></div><div class="act-time">${a.time}</div></div>`).join('');
+  else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.status==='late'?' · LATE':' · On Time'}`:`OUT · ${a.duration||''}`}</div></div><div class="act-time">${to12hr(a.time)}</div></div>`).join('');
 
   document.getElementById('empTable').innerHTML=(emps||[]).map(e=>`<tr><td><strong>${e.name}</strong></td><td class="td-mono">${e.id}</td><td>${e.dept||'—'}</td><td style="font-size:11px;">${e.email||'—'}</td><td class="td-mono">${e.password||'—'}</td><td><div class="action-btns"><button class="btn btn-danger btn-sm" onclick="removeEmployee('${e.id}')">Remove</button></div></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No employees</td></tr>';
 
   const sorted=[...(att||[])].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('attTable').innerHTML=sorted.map(r=>{
     const sessions=r.sessions||[];
-    const sessLine=sessions.length?sessions.map((s,i)=>`S${i+1}:${s.in||'—'}→${s.out||'…'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
+    const sessLine=sessions.length?sessions.map((s,i)=>`S${i+1}:${to12hr(s.in||'—')}→${to12hr(s.out||'…')}`).join(' | '):`${to12hr(r.checkIn||'—')}→${to12hr(r.checkOut||'—')}`;
     const lateNote=(sessions.length>=2&&sessions[1].lateNote)?` ⚠ ${sessions[1].lateNote}`:'';
     return`<tr><td class="td-mono" style="white-space:nowrap;">${r.date}</td><td>${r.name||r.empId}</td><td class="td-mono" style="font-size:11px;">${sessLine}${lateNote?`<br><span style="color:var(--warn);font-size:10px;">${lateNote}</span>`:''}</td><td class="td-mono" style="white-space:nowrap;">${r.totalWork||r.duration||'—'}</td><td><span class="att-badge badge-${r.status}">${r.status}</span></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No records</td></tr>';
 
   const rl=document.getElementById('reqList');
   if(!(leaves||[]).length){rl.innerHTML='<p style="color:var(--muted);font-size:13px;">No leave requests.</p>';}
-  else rl.innerHTML=(leaves||[]).map(r=>`<div class="req-card ${r.status}"><div style="flex:1;min-width:0;"><div class="ri-name">${r.name} <span class="td-mono" style="font-size:10px;color:var(--muted)">${r.empId}</span></div><div class="ri-dates">${r.type} · ${r.from} → ${r.to}</div><div class="ri-reason">${r.reason}</div></div>${r.status==='pending'?`<div class="req-actions"><button class="btn btn-primary btn-sm" onclick="handleReq('${r.id}','approved')">✓</button><button class="btn btn-danger btn-sm" onclick="handleReq('${r.id}','rejected')">✕</button></div>`:`<span class="att-badge badge-${r.status==='approved'?'present':'absent'}">${r.status.toUpperCase()}</span>`}</div>`).join('');
+  else rl.innerHTML=(leaves||[]).map(r=>`<div class="req-card ${r.status}"><div style="flex:1;min-width:0;"><div class="ri-name">${r.name} <span class="td-mono" style="font-size:10px;color:var(--muted)">${r.empId}</span></div><div class="ri-dates">${r.type} · ${r.from} → ${r.to}</div><div class="ri-reason">${r.reason}</div></div>${`<span class="att-badge badge-${r.status==='approved'?'present':r.status==='rejected'?'absent':'holiday'}">${(r.status||'pending').toUpperCase()}</span>`}</div>`).join('');
 }
 
 // ── Panel nav ─────────────────────────────────────────────
