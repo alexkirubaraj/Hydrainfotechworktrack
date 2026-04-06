@@ -404,7 +404,6 @@ svg.ring{transform:rotate(-90deg);}
           <button class="btn btn-secondary" id="checkOutBtn" onclick="checkOut()" disabled>◼ Clock Out</button>
         </div>
         <div class="session-row" id="sessionChips"></div>
-        <div id="adminCallNotice" style="margin-top:8px;"></div>
       </div>
     </div>
 
@@ -440,7 +439,29 @@ svg.ring{transform:rotate(-90deg);}
       </div>
     </div>
 
-<!-- Leave panels removed -->
+    <!-- TAB: Leave -->
+    <div class="tab-panel" id="tab-leave-1">
+      <div class="card">
+        <div class="card-title">Apply for Leave</div>
+        <div class="holiday-form">
+          <div class="field"><label>From Date</label><input type="date" id="hFrom"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="hTo"/></div>
+          <div class="field">
+            <label>Leave Type</label>
+            <select id="hType"><option>Casual Leave</option><option>Sick Leave</option><option>Annual Leave</option><option>Emergency Leave</option></select>
+          </div>
+          <div class="field"><label>Reason</label><textarea id="hReason" placeholder="Briefly describe your reason..."></textarea></div>
+          <button class="leave-btn" onclick="submitLeave()">✈ Submit Leave Request</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel full-col" id="tab-leave-2">
+      <div class="card">
+        <div class="card-title">My Leave Requests</div>
+        <div class="req-list" id="myRequests"><p style="color:var(--muted);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
 
   </div><!-- /emp-content -->
 
@@ -454,7 +475,10 @@ svg.ring{transform:rotate(-90deg);}
       <span class="nav-icon">📋</span>
       <span class="nav-label">History</span>
     </button>
-<!-- Leave tab removed -->
+    <button class="nav-item" id="nav-leave" onclick="switchTab('leave')">
+      <span class="nav-icon">✈️</span>
+      <span class="nav-label">Leave</span>
+    </button>
     <button class="nav-item" id="nav-logout" onclick="doLogout()">
       <span class="nav-icon">🚪</span>
       <span class="nav-label">Logout</span>
@@ -487,21 +511,24 @@ function to12hr(t){
   return `${h}:${m} ${ampm}`;
 }
 
-let session={},settings={workHours:9,startTime:'08:00',endTime:'17:00',graceMins:15,session2Start:'13:30'};
+let session={},settings={workHours:9,startTime:'09:30',endTime:'18:30',graceMins:15};
 let timerInterval=null,clockInterval=null,checkInTs=null;
 let sessionCount=0,totalWorkedSecs=0;
 const CIRC=402;
 
 // ── Tab switching (mobile) ──────────────────────────────────
 function switchTab(tab){
+  // toggle panels
   const homeIds=['tab-home-1','tab-home-2'];
   const histIds=['tab-history'];
-  const allPanels=[...homeIds,...histIds];
-  const show = tab==='home'?homeIds:histIds;
+  const leaveIds=['tab-leave-1','tab-leave-2'];
+  const allPanels=[...homeIds,...histIds,...leaveIds];
+  const show = tab==='home'?homeIds:tab==='history'?histIds:leaveIds;
   allPanels.forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.toggle('active',show.includes(id));
   });
+  // toggle nav active
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navBtn=document.getElementById('nav-'+tab);
   if(navBtn) navBtn.classList.add('active');
@@ -559,7 +586,8 @@ async function initDashboard(){
   document.getElementById('targetHours').textContent=settings.workHours+'h';
   startClock();
   await loadHistoryAndState();
-// Leave feature removed
+  loadLeaves();
+  setInterval(loadLeaves,30000);
   // show logout on desktop
   document.getElementById('logoutBtn').style.display='';
 }
@@ -585,7 +613,7 @@ function checkNotice(now){
   if(checkInTs){box.innerHTML=`<div class="emp-notice default">✅ Session ${sessionCount} in progress</div>`;return;}
   if(!checkInTs){
     if(sessionCount===0)box.innerHTML=nowMin<=endMin?`<div class="emp-notice warn">⚠ Not clocked in yet!</div>`:`<div class="emp-notice warn">⚠ Office hours ended.</div>`;
-    else if(sessionCount===1){const s2=settings.session2Start||'13:30';box.innerHTML=`<div class="emp-notice info">⏸ On break — clock in for Session 2 at ${to12hr(s2)}</div>`;}
+    else if(sessionCount===1)box.innerHTML=`<div class="emp-notice info">⏸ On break — clock in for Session 2</div>`;
     else box.innerHTML=`<div class="emp-notice success">✅ Work complete!</div>`;
     return;
   }
@@ -598,15 +626,7 @@ async function checkIn(){
   const now=new Date(),checkInStr=now.toTimeString().slice(0,5);
   const [sh,sm]=settings.startTime.split(':').map(Number);
   const nowMin=now.getHours()*60+now.getMinutes();
-  let status='present';
-  if(sessionCount===0){
-    status=nowMin<=sh*60+sm+(settings.graceMins||15)?'present':'late';
-  } else {
-    // Session 2 late check
-    const s2Start=settings.session2Start||'13:30';
-    const [s2h,s2m]=s2Start.split(':').map(Number);
-    status=nowMin<=(s2h*60+s2m+(settings.graceMins||15))?'present':'late';
-  }
+  const status=sessionCount===0?(nowMin<=sh*60+sm+settings.graceMins?'present':'late'):'present';
   const res=await api('POST','/api/checkin',{empId:session.empId,name:session.name,checkIn:checkInStr,status});
   if(res.error){showToast('❌',res.error);return;}
   checkInTs=now;sessionCount++;
@@ -614,17 +634,7 @@ async function checkIn(){
   document.getElementById('checkOutBtn').disabled=false;
   document.getElementById('sessionLabel').textContent=`${sessionCount} of 2`;
   updateSessionChips(res.rec);startTimer();
-  // Show admin call notification if late (for either session)
-  const adminPhone = res.adminPhone || settings.adminPhone || '';
-  const noticeEl = document.getElementById('adminCallNotice');
-  if(res.late && adminPhone){
-    noticeEl.innerHTML=`<div class="emp-notice warn">⚠ Late clock-in! Please notify admin: <a href="tel:${adminPhone}" style="color:var(--accent);font-weight:700;">📞 Call Admin</a></div>`;
-  } else if(res.late){
-    noticeEl.innerHTML='<div class="emp-notice warn">⚠ Late clock-in! Please inform your admin.</div>';
-  } else {
-    noticeEl.innerHTML='';
-  }
-  if(res.lateNote)showToast('⚠️',`${res.lateNote} — Please contact admin`);
+  if(res.lateMsg)showToast('⚠️',res.lateMsg);
   else if(sessionCount===2)showToast('✅',`Session 2 started at ${to12hr(checkInStr)}`);
   else showToast('✅',`Clocked in at ${to12hr(checkInStr)}${status==='late'?' (Late)':''}`);
 }
@@ -648,7 +658,7 @@ async function checkOut(){
     showToast('⏸',totalWorkedSecs>=TARGET?`Full Day! Total: ${res.totalWork}`:'Break started — Clock in for Session 2');
   }else{
     setPill('out');
-    showToast(totalWorkedSecs<TARGET?'⚠️':'✅',totalWorkedSecs<TARGET?`Half Day (${fmt(totalWorkedSecs)} worked)`:`Full Day! Total: ${res.totalWork||fmt(totalWorkedSecs)}`);
+    showToast(totalWorkedSecs<TARGET?'⚠️':'✅',totalWorkedSecs<TARGET?`Half Day — Absent (${fmt(totalWorkedSecs)} worked)`:`Full Day! Total: ${res.totalWork||fmt(totalWorkedSecs)}`);
   }
   await loadHistoryAndState();
 }
@@ -721,9 +731,15 @@ async function loadHistoryAndState(){
   }
 }
 
-// Leave feature removed
-async function submitLeave(){return; // Leave feature removed
-  if(false){
+// ── Leaves ──────────────────────────────────────────────────
+async function loadLeaves(){
+  const res=await api('GET',`/api/leaves/${session.empId}`);
+  const reqs=Array.isArray(res)?res:[];
+  const el=document.getElementById('myRequests');
+  if(!reqs.length){el.innerHTML='<p style="color:var(--muted);font-size:13px;">No leave requests.</p>';return;}
+  el.innerHTML=reqs.map(r=>`<div class="req-card ${r.status}"><div><div class="ri-name">${r.type}</div><div class="ri-dates">${r.from} → ${r.to}</div><div class="ri-reason">${r.reason}</div></div><span class="att-badge badge-${r.status||'holiday'}">${(r.status||'pending').toUpperCase()}</span></div>`).join('');
+}
+async function submitLeave(){
   const from=document.getElementById('hFrom').value,to=document.getElementById('hTo').value;
   const type=document.getElementById('hType').value,reason=document.getElementById('hReason').value.trim();
   if(!from||!to||!reason){showToast('⚠️','Fill all fields.');return;}
