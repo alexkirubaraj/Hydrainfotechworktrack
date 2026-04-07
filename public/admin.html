@@ -20,17 +20,9 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .screen{display:none;min-height:100vh;}
 .screen.active{display:flex;}
 
-/* ══ LOGIN ═══════════════════════════════════════════════ */
-#loginScreen{
-  align-items:center;justify-content:center;padding:20px;
-  background:radial-gradient(ellipse at 30% 20%,#1a0116,#0d0f14 60%),
-             radial-gradient(ellipse at 80% 80%,#0a1a2e,transparent 60%);
-}
-.login-box{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:20px;padding:40px 36px;width:100%;max-width:420px;
-  box-shadow:0 40px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;
-}
+/* LOGIN */
+#loginScreen{align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 30% 20%,#1a0116,#0d0f14 60%),radial-gradient(ellipse at 80% 80%,#0a1a2e,transparent 60%);}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 40px 80px rgba(0,0,0,.6);position:relative;overflow:hidden;}
 .login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
 .brand{text-align:center;margin-bottom:32px;}
 .brand-logo{max-width:200px;height:auto;display:block;margin:0 auto 14px;border-radius:8px;}
@@ -47,21 +39,12 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .btn-danger{background:var(--danger);color:#fff;border:none;}
 .btn-sm{width:auto;padding:9px 14px;font-size:12px;border-radius:8px;}
 .login-error{color:var(--danger);font-size:13px;text-align:center;margin-top:10px;display:none;font-family:'DM Mono',monospace;}
-.login-hint{color:var(--muted);font-size:11px;text-align:center;margin-top:10px;font-family:'DM Mono',monospace;}
 
-/* ══ TOPBAR ══════════════════════════════════════════════ */
+/* TOPBAR */
 #adminScreen{flex-direction:column;}
-.topbar{
-  height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;
-  padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:300;gap:10px;
-}
+.topbar{height:var(--topbar-h);display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:300;gap:10px;}
 .topbar-left{display:flex;align-items:center;gap:12px;}
-.hamburger{
-  width:36px;height:36px;background:none;border:none;cursor:pointer;
-  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;
-  padding:4px;border-radius:8px;transition:background .2s;flex-shrink:0;
-}
+.hamburger{width:36px;height:36px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:4px;border-radius:8px;transition:background .2s;flex-shrink:0;}
 .hamburger:hover{background:var(--surface2);}
 .hamburger span{display:block;width:18px;height:2px;background:var(--text);border-radius:1px;transition:all .3s;}
 .hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
@@ -74,44 +57,30 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .live-dot{width:6px;height:6px;background:var(--accentL);border-radius:50%;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
 
-/* ══ SIDEBAR DRAWER ══════════════════════════════════════ */
-.sidebar-overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:199;
-  display:none;opacity:0;transition:opacity .3s;
-}
+/* SIDEBAR */
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:199;display:none;opacity:0;transition:opacity .3s;}
 .sidebar-overlay.open{display:block;opacity:1;}
-.sidebar{
-  position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);
-  background:var(--surface);border-right:1px solid var(--border);
-  z-index:200;overflow-y:auto;
-  transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
-  padding-top:var(--topbar-h);display:flex;flex-direction:column;gap:2px;
-}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);z-index:200;overflow-y:auto;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);padding-top:var(--topbar-h);display:flex;flex-direction:column;gap:2px;}
 .sidebar.open{transform:translateX(0);}
 .sidebar-section{padding:8px 22px 4px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:8px;}
-.sidebar-item{
-  display:flex;align-items:center;gap:10px;padding:12px 22px;
-  cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);
-  border-left:2px solid transparent;transition:all .2s;
-  -webkit-tap-highlight-color:transparent;
-}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:12px 22px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);border-left:2px solid transparent;transition:all .2s;-webkit-tap-highlight-color:transparent;}
 .sidebar-item:hover{color:var(--text);background:var(--surface2);}
 .sidebar-item.active{color:var(--accentL);border-left-color:var(--accent);background:rgba(167,2,140,.06);}
 .si-icon{font-size:16px;}
-.notif-dot{width:7px;height:7px;background:var(--warn);border-radius:50%;display:inline-block;margin-left:auto;}
 
-/* ══ MAIN CONTENT ════════════════════════════════════════ */
-.admin-main{
-  flex:1;padding:16px;overflow-y:auto;
-  min-height:calc(100vh - var(--topbar-h));
-}
+/* Notification badge on sidebar */
+.notif-badge{background:var(--danger);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:2px 6px;margin-left:auto;font-family:'DM Mono',monospace;display:none;}
+.notif-badge.show{display:inline-block;}
+
+/* MAIN */
+.admin-main{flex:1;padding:16px;overflow-y:auto;min-height:calc(100vh - var(--topbar-h));}
 .admin-panel{display:none;}
 .admin-panel.active{display:block;}
 .panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
 .panel-title{font-size:20px;font-weight:800;}
 .panel-sub{color:var(--muted);font-size:12px;margin-top:4px;font-family:'DM Mono',monospace;}
 
-/* ══ STAT CARDS ══════════════════════════════════════════ */
+/* STAT CARDS */
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;}
 .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
@@ -120,7 +89,7 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .sc-label{color:var(--muted);font-size:10px;margin-top:3px;text-transform:uppercase;letter-spacing:1px;}
 .sc-green .sc-num{color:var(--accentL);}.sc-blue .sc-num{color:var(--accent2);}.sc-orange .sc-num{color:var(--warn);}.sc-purple .sc-num{color:var(--holiday);}
 
-/* ══ TABLE (scrollable on mobile) ═══════════════════════ */
+/* TABLE */
 .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 table{width:100%;border-collapse:collapse;min-width:480px;}
@@ -137,7 +106,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .badge-absent{background:rgba(255,56,96,.1);color:var(--danger);}
 .badge-half-day{background:rgba(255,107,53,.08);color:var(--warn);}
 
-/* ══ ACTIVITY FEED ═══════════════════════════════════════ */
+/* ACTIVITY FEED */
 .activity-feed{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;}
 .act-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);}
 .act-item.checkout{border-left-color:var(--muted);}.act-item.late{border-left-color:var(--warn);}
@@ -147,163 +116,99 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .act-detail{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px;}
 .act-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0;}
 
-/* ══ MODAL ═══════════════════════════════════════════════ */
+/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);padding:0;}
 .modal-overlay.show{display:flex;}
-.modal{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:20px 20px 0 0;padding:32px 24px 24px;
-  width:100%;max-width:520px;max-height:90vh;overflow-y:auto;position:relative;
-}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:32px 24px 24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;position:relative;}
 .modal::before{content:'';display:block;width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
 .modal h2{font-size:18px;font-weight:800;margin-bottom:20px;}
 .modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;}
 .modal-actions{display:flex;gap:10px;margin-top:16px;}
 .modal-actions .btn{flex:1;}
 
-/* ══ REQ CARDS ═══════════════════════════════════════════ */
-.req-list{display:flex;flex-direction:column;gap:12px;}
-.req-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
-.req-card.approved{border-left:3px solid var(--accent);}.req-card.rejected{border-left:3px solid var(--danger);}.req-card.pending{border-left:3px solid var(--holiday);}
-.ri-name{font-weight:700;font-size:13px;}
-.ri-dates{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;}
-.ri-reason{font-size:12px;color:var(--text);margin-top:5px;opacity:.8;}
-.req-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;}
+/* NOTIFICATION POPUP */
+.notif-popup{
+  position:fixed;top:70px;right:16px;z-index:500;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:14px 16px;
+  min-width:280px;max-width:340px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+  display:none;
+  animation:notifSlide .3s cubic-bezier(.4,0,.2,1);
+}
+.notif-popup.show{display:block;}
+@keyframes notifSlide{from{opacity:0;transform:translateY(-12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.notif-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.notif-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'DM Mono',monospace;}
+.notif-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0;line-height:1;}
+.notif-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;}
+.notif-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--accent);animation:notifItemIn .25s ease;}
+.notif-item.late{border-left-color:var(--warn);}
+.notif-item.logout{border-left-color:var(--muted);}
+@keyframes notifItemIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+.notif-icon{font-size:20px;flex-shrink:0;}
+.notif-info{flex:1;min-width:0;}
+.notif-name{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.notif-detail{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px;}
+.notif-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;}
+.notif-bell{position:relative;cursor:pointer;background:none;border:none;padding:4px 6px;border-radius:8px;transition:background .2s;}
+.notif-bell:hover{background:var(--surface2);}
+.notif-bell svg{width:20px;height:20px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;}
+.notif-count{position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;border-radius:8px;font-size:9px;font-weight:700;padding:1px 5px;font-family:'DM Mono',monospace;display:none;}
+.notif-count.show{display:block;}
 
-/* ══ SETTINGS ════════════════════════════════════════════ */
+/* SETTINGS */
 .settings-grid{display:flex;flex-direction:column;gap:16px;}
 .setting-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
 .setting-card h3{font-size:14px;font-weight:700;margin-bottom:14px;}
 
-/* ══ EXPORT ══════════════════════════════════════════════ */
+/* DANGER ZONE */
+.danger-zone{background:var(--surface);border:1px solid rgba(255,56,96,.3);border-radius:14px;padding:20px;margin-top:16px;}
+.danger-zone h3{font-size:14px;font-weight:700;color:var(--danger);margin-bottom:6px;}
+.danger-zone p{color:var(--muted);font-size:12px;font-family:'DM Mono',monospace;margin-bottom:14px;line-height:1.6;}
+.btn-clear{background:rgba(255,56,96,.12);color:var(--danger);border:1px solid rgba(255,56,96,.4);border-radius:10px;padding:12px 20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:all .2s;}
+.btn-clear:hover{background:rgba(255,56,96,.22);border-color:var(--danger);}
+
+/* CONFIRM MODAL */
+.confirm-modal{background:var(--surface);border:1px solid rgba(255,56,96,.4);border-radius:20px 20px 0 0;padding:32px 24px 24px;width:100%;max-width:420px;position:relative;}
+.confirm-modal::before{content:'';display:block;width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.confirm-modal h2{font-size:18px;font-weight:800;color:var(--danger);margin-bottom:10px;}
+.confirm-modal p{color:var(--muted);font-size:13px;font-family:'DM Mono',monospace;line-height:1.7;margin-bottom:20px;}
+
+/* EXPORT */
 .export-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;}
 .export-wrap h3{font-size:14px;font-weight:700;margin-bottom:8px;}
 .export-wrap p{color:var(--muted);font-size:13px;margin-bottom:14px;}
 .export-btns{display:flex;flex-direction:column;gap:10px;}
-.btn-export{padding:13px 18px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;width:100;}
+.btn-export{padding:13px 18px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;width:100%;}
 .btn-export:hover{border-color:var(--accent);color:var(--accentL);}
 
-/* ══ TOAST ════════════════════════════════════════════════ */
+/* TOAST */
 .toast{position:fixed;bottom:20px;left:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;font-size:13px;z-index:999;display:none;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.5);}
 @keyframes slideUp{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 .toast.show{display:flex;animation:slideUp .25s ease;}
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(167,2,140,.3);border-radius:2px;}
 
-/* ══ GB-POPUP-SCALE-BLUR ANIMATION ═══════════════════════ */
-@keyframes gb-popup-scale-blur {
-  0%   {opacity:0;transform-origin:50% 50%;transform:scale(2,2);filter:blur(90px);}
-  100% {opacity:1;transform-origin:50% 50%;transform:scale(1,1);filter:blur(0px);}
-}
-.visible-section .gb-popup-scale-blur,
-.visible-lightbox .gb-popup-scale-blur {
-  animation: gb-popup-scale-blur 1s both;
-}
-.gb-popup-scale-blur {
-  animation: gb-popup-scale-blur 1s both;
-}
+@keyframes gb-popup-scale-blur{0%{opacity:0;transform-origin:50% 50%;transform:scale(2,2);filter:blur(90px);}100%{opacity:1;transform-origin:50% 50%;transform:scale(1,1);filter:blur(0px);}}
+.visible-section .gb-popup-scale-blur,.visible-lightbox .gb-popup-scale-blur{animation:gb-popup-scale-blur 1s both;}
+.gb-popup-scale-blur{animation:gb-popup-scale-blur 1s both;}
 
-/* ══ BUTTON ANIMATIONS ═══════════════════════════════════ */
-@keyframes btn-ripple {
-  0%   {box-shadow:0 0 0 0 rgba(167,2,140,.5);}
-  70%  {box-shadow:0 0 0 12px rgba(167,2,140,0);}
-  100% {box-shadow:0 0 0 0 rgba(167,2,140,0);}
-}
-@keyframes btn-pulse-glow {
-  0%,100% {box-shadow:0 0 8px rgba(167,2,140,.3),0 4px 15px rgba(0,0,0,.3);}
-  50%      {box-shadow:0 0 22px rgba(217,22,184,.6),0 4px 20px rgba(167,2,140,.4);}
-}
-@keyframes btn-slide-shine {
-  0%   {background-position:200% center;}
-  100% {background-position:-200% center;}
-}
-@keyframes btn-bounce-in {
-  0%   {transform:scale(1);}
-  40%  {transform:scale(.94);}
-  70%  {transform:scale(1.04);}
-  100% {transform:scale(1);}
-}
-@keyframes btn-danger-shake {
-  0%,100% {transform:translateX(0);}
-  20%     {transform:translateX(-3px);}
-  40%     {transform:translateX(3px);}
-  60%     {transform:translateX(-2px);}
-  80%     {transform:translateX(2px);}
-}
+/* BUTTON ANIMATIONS */
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accentL));background-size:200% auto;transition:all .25s ease,transform .15s ease;position:relative;overflow:hidden;}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.18) 50%,transparent 100%);background-size:200% 100%;background-position:200% 0;transition:background-position .5s ease;pointer-events:none;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(167,2,140,.45);}
+.btn-primary:active{transform:scale(.97) translateY(0);}
+.btn-secondary{transition:all .25s ease,transform .15s ease;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accentL);transform:translateY(-1px);}
+.btn-danger{transition:all .25s ease,transform .15s ease;}
+.btn-danger:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,56,96,.4);}
+.sidebar-item{transition:all .2s ease,transform .15s ease;}
+.sidebar-item:hover{transform:translateX(3px);}
+.sidebar-item.active{transform:translateX(3px);}
 
-.btn-primary {
-  background:linear-gradient(135deg,var(--accent),var(--accentL));
-  background-size:200% auto;
-  transition:all .25s ease,transform .15s ease;
-  position:relative;overflow:hidden;
-}
-.btn-primary::after {
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.18) 50%,transparent 100%);
-  background-size:200% 100%;background-position:200% 0;
-  transition:background-position .5s ease;
-  pointer-events:none;
-}
-.btn-primary:hover {
-  transform:translateY(-2px);
-  box-shadow:0 6px 24px rgba(167,2,140,.45);
-  animation:btn-pulse-glow 2s ease infinite;
-}
-.btn-primary:hover::after {background-position:-200% 0;}
-.btn-primary:active {
-  transform:scale(.97) translateY(0);
-  animation:btn-bounce-in .3s ease both;
-}
-.btn-primary:focus-visible {animation:btn-ripple .6s ease both;}
-
-.btn-secondary {
-  transition:all .25s ease,transform .15s ease;
-  position:relative;overflow:hidden;
-}
-.btn-secondary:hover {
-  border-color:var(--accent);
-  color:var(--accentL);
-  transform:translateY(-1px);
-  box-shadow:0 4px 16px rgba(0,0,0,.3);
-}
-.btn-secondary:active {transform:scale(.97);}
-
-.btn-danger {
-  transition:all .25s ease,transform .15s ease;
-}
-.btn-danger:hover {
-  transform:translateY(-1px);
-  box-shadow:0 4px 16px rgba(255,56,96,.4);
-  filter:brightness(1.1);
-}
-.btn-danger:active {animation:btn-danger-shake .35s ease both;}
-
-.btn-export {
-  transition:all .25s ease,transform .15s ease;
-  position:relative;overflow:hidden;
-}
-.btn-export:hover {
-  border-color:var(--accent);color:var(--accentL);
-  transform:translateY(-1px);
-  box-shadow:0 4px 14px rgba(167,2,140,.2);
-}
-.btn-export:active {transform:scale(.97);}
-
-/* Nav sidebar item hover pop */
-.sidebar-item {transition:all .2s ease,transform .15s ease;}
-.sidebar-item:hover {transform:translateX(3px);}
-.sidebar-item.active {transform:translateX(3px);}
-
-
-/* ══ DESKTOP (≥ 768px) ════════════════════════════════════ */
 @media(min-width:768px){
-  /* Always-visible sidebar on desktop */
-  .sidebar{
-    position:sticky;top:var(--topbar-h);
-    transform:none !important;
-    height:calc(100vh - var(--topbar-h));
-    padding-top:0;flex-shrink:0;
-  }
+  .sidebar{position:sticky;top:var(--topbar-h);transform:none !important;height:calc(100vh - var(--topbar-h));padding-top:0;flex-shrink:0;}
   .sidebar-overlay{display:none !important;}
   .hamburger{display:none;}
   .topbar-user{display:block;}
@@ -315,68 +220,69 @@ tr:hover td{background:rgba(255,255,255,.02);}
   .modal-overlay{align-items:center;padding:20px;}
   .modal{border-radius:20px;max-height:80vh;}
   .modal::before{display:none;}
+  .confirm-modal{border-radius:20px;}
+  .confirm-modal::before{display:none;}
   .settings-grid{display:grid;grid-template-columns:1fr 1fr;}
   .export-btns{flex-direction:row;flex-wrap:wrap;}
   .btn-export{width:auto;}
   .toast{left:auto;right:24px;bottom:24px;min-width:280px;max-width:380px;}
   table{min-width:auto;}
+  .notif-popup{top:70px;right:24px;}
 }
-@media(min-width:1024px){
-  .admin-main{padding:28px 32px;}
-  .sc-num{font-size:34px;}
-}
+@media(min-width:1024px){.admin-main{padding:28px 32px;}.sc-num{font-size:34px;}}
 </style>
 </head>
 <body>
 
-<!-- ══════════ LOGIN ══════════ -->
+<!-- LOGIN -->
 <div id="loginScreen" class="screen active visible-section">
   <div class="login-box gb-popup-scale-blur">
     <div class="brand">
       <img src="hi.png" alt="Hydra Infotech" class="brand-logo"/>
-      <div class="brand-sub"><span style="font-size: 113%;">&#923;</span>DMIN</div>
+      <div class="brand-sub"><span style="font-size:113%;">&#923;</span>DMIN</div>
     </div>
-    <div class="field"><label>Username</label><input type="text" id="aUser" placeholder="admin1 or admin2" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="field"><label>Username</label><input type="text" id="aUser" placeholder="admin username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/></div>
     <div class="field"><label>Password</label><input type="password" id="aPass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
     <button class="btn btn-primary" onclick="doLogin()">Sign In as &#923;dmin →</button>
     <div class="login-error" id="loginError">Invalid credentials.</div>
-    <div class="login-hint"></div>
   </div>
 </div>
 
-<!-- ══════════ ADMIN ══════════ -->
+<!-- ADMIN -->
 <div id="adminScreen" class="screen">
 
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-left">
-      <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
       <img src="hi.png" alt="Hydra" class="topbar-logo"/>
       <span class="topbar-user mono" id="adminNameBar">—</span>
     </div>
     <div class="topbar-right">
       <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+      <!-- Bell notification button -->
+      <button class="notif-bell" onclick="toggleNotifPopup()" title="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-count" id="notifCount">0</span>
+      </button>
       <button class="btn btn-secondary btn-sm" onclick="doLogout()">Logout</button>
     </div>
   </div>
 
-  <!-- Body: sidebar + main -->
   <div class="admin-body" style="display:flex;flex:1;">
-
-    <!-- Sidebar overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
     <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-section">Monitor</div>
       <div class="sidebar-item active" onclick="showPanel('overview',this)"><span class="si-icon">📊</span>Overview</div>
-      <div class="sidebar-item" onclick="showPanel('live',this)"><span class="si-icon">🟢</span>Live Activity</div>
+      <div class="sidebar-item" id="sidebarLive" onclick="showPanel('live',this)">
+        <span class="si-icon">🟢</span>Live Activity
+        <span class="notif-badge" id="liveBadge">0</span>
+      </div>
       <div class="sidebar-section">Manage</div>
       <div class="sidebar-item" onclick="showPanel('employees',this)"><span class="si-icon">👥</span>Employees</div>
       <div class="sidebar-item" onclick="showPanel('attendance',this)"><span class="si-icon">📋</span>Attendance</div>
-
       <div class="sidebar-section">Configure</div>
       <div class="sidebar-item" onclick="showPanel('settings',this)"><span class="si-icon">⚙️</span>Work Hours</div>
       <div class="sidebar-item" onclick="showPanel('export',this)"><span class="si-icon">📤</span>Export</div>
@@ -397,10 +303,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <div class="stat-card sc-purple"><div class="sc-num" id="s-pending">0</div><div class="sc-label">Half Day</div></div>
         </div>
         <div class="table-wrap"><div class="table-scroll">
-          <table>
-            <thead><tr><th>Employee</th><th>Sessions Today</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody id="ovTable"></tbody>
-          </table>
+          <table><thead><tr><th>Employee</th><th>Sessions Today</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="ovTable"></tbody></table>
         </div></div>
       </div>
 
@@ -420,10 +324,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <button class="btn btn-primary btn-sm" onclick="openAddEmp()">+ Add</button>
         </div>
         <div class="table-wrap"><div class="table-scroll">
-          <table>
-            <thead><tr><th>Name</th><th>ID</th><th>Dept</th><th>Email</th><th>Pass</th><th>Action</th></tr></thead>
-            <tbody id="empTable"></tbody>
-          </table>
+          <table><thead><tr><th>Name</th><th>ID</th><th>Dept</th><th>Email</th><th>Pass</th><th>Action</th></tr></thead>
+          <tbody id="empTable"></tbody></table>
         </div></div>
       </div>
 
@@ -433,14 +335,10 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <div><div class="panel-title">Attendance Log</div><div class="panel-sub mono">All records</div></div>
         </div>
         <div class="table-wrap"><div class="table-scroll">
-          <table>
-            <thead><tr><th>Date</th><th>Employee</th><th>Sessions</th><th>Total</th><th>Status</th></tr></thead>
-            <tbody id="attTable"></tbody>
-          </table>
+          <table><thead><tr><th>Date</th><th>Employee</th><th>Sessions</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="attTable"></tbody></table>
         </div></div>
       </div>
-
-      <!-- Leave Requests panel removed -->
 
       <!-- Settings -->
       <div class="admin-panel" id="panel-settings">
@@ -457,13 +355,20 @@ tr:hover td{background:rgba(255,255,255,.02);}
             <div class="field"><label>Shift End Time</label><input type="time" id="setEnd"/></div>
             <div class="field"><label>Grace (mins)</label><input type="number" id="setGrace" min="0" max="60" placeholder="15"/></div>
             <div class="field"><label>Break (mins)</label><input type="number" id="setBreak" min="0" max="120" placeholder="45"/></div>
-            <div class="field"><label>Admin Phone (for notifications)</label><input type="tel" id="setAdminPhone" placeholder="+91XXXXXXXXXX"/></div>
+            <div class="field"><label>Admin Phone</label><input type="tel" id="setAdminPhone" placeholder="+91XXXXXXXXXX"/></div>
             <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
           </div>
           <div class="setting-card">
             <h3>📋 Current</h3>
             <div id="currentSettings" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);line-height:2.2;">Loading...</div>
           </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone">
+          <h3>⚠️ Danger Zone</h3>
+          <p>Clear all attendance and activity records.<br>Employee accounts will be kept. This cannot be undone.</p>
+          <button class="btn-clear" onclick="openClearConfirm()">🗑️ Clear All Attendance Data</button>
         </div>
       </div>
 
@@ -481,10 +386,24 @@ tr:hover td{background:rgba(255,255,255,.02);}
       </div>
 
     </main>
-  </div><!-- /admin-body -->
-</div><!-- /adminScreen -->
+  </div>
+</div>
 
-<!-- Add Employee Modal (bottom sheet on mobile) -->
+<!-- Notification Popup -->
+<div class="notif-popup" id="notifPopup">
+  <div class="notif-header">
+    <span class="notif-title">🔔 Notifications</span>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="clearNotifs()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;">Clear all</button>
+      <button class="notif-close" onclick="closeNotifPopup()">✕</button>
+    </div>
+  </div>
+  <div class="notif-list" id="notifList">
+    <p style="color:var(--muted);font-size:12px;text-align:center;padding:10px 0;font-family:'DM Mono',monospace;">No notifications yet</p>
+  </div>
+</div>
+
+<!-- Add Employee Modal -->
 <div class="modal-overlay" id="addEmpModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -501,6 +420,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- Clear Confirm Modal -->
+<div class="modal-overlay" id="clearModal">
+  <div class="confirm-modal">
+    <button class="modal-close" onclick="closeClearModal()">✕</button>
+    <h2>⚠️ Clear All Data?</h2>
+    <p>This will permanently delete:<br>
+    • All attendance records<br>
+    • All activity logs<br><br>
+    Employee accounts will be kept.<br>
+    <strong style="color:var(--danger);">This action cannot be undone.</strong></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeClearModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmClearAll()">🗑️ Yes, Clear Everything</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"><span id="toastIcon">✅</span><span id="toastMsg">—</span></div>
 
 <script>
@@ -511,21 +447,21 @@ async function api(method,path,data){
 }
 
 let session={},pollInterval=null,settings={};
+let notifications=[]; // in-memory notification list
+let unreadCount=0;
+let liveUnread=0; // badge on sidebar Live Activity
+let sseSource=null;
 
-// ── Admin session persistence (survives F5, cleared on tab close) ──
+// ── Admin session ────────────────────────────────────────────
 function saveAdminSession(){if(session&&session.username)sessionStorage.setItem('wt_admin',JSON.stringify(session));}
 function restoreAdminSession(){try{const r=sessionStorage.getItem('wt_admin');if(r){session=JSON.parse(r);return true;}}catch(e){}return false;}
 function clearAdminSession(){sessionStorage.removeItem('wt_admin');session={};}
 
-// ── Sidebar ──────────────────────────────────────────────
+// ── Sidebar ──────────────────────────────────────────────────
 function toggleSidebar(){
-  const sb=document.getElementById('sidebar');
-  const ov=document.getElementById('sidebarOverlay');
-  const hb=document.getElementById('hamburger');
+  const sb=document.getElementById('sidebar'),ov=document.getElementById('sidebarOverlay'),hb=document.getElementById('hamburger');
   const isOpen=sb.classList.contains('open');
-  sb.classList.toggle('open',!isOpen);
-  ov.classList.toggle('open',!isOpen);
-  hb.classList.toggle('open',!isOpen);
+  sb.classList.toggle('open',!isOpen);ov.classList.toggle('open',!isOpen);hb.classList.toggle('open',!isOpen);
 }
 function closeSidebar(){
   document.getElementById('sidebar').classList.remove('open');
@@ -533,7 +469,7 @@ function closeSidebar(){
   document.getElementById('hamburger').classList.remove('open');
 }
 
-// ── Auth ─────────────────────────────────────────────────
+// ── Auth ─────────────────────────────────────────────────────
 async function doLogin(){
   const username=document.getElementById('aUser').value.trim();
   const password=document.getElementById('aPass').value.trim();
@@ -542,42 +478,182 @@ async function doLogin(){
   if(res.ok){session={name:res.name,username:res.username};saveAdminSession();showScreen('adminScreen');initAdmin();}
   else err.style.display='block';
 }
-function doLogout(){clearInterval(pollInterval);clearAdminSession();showScreen('loginScreen');document.getElementById('aUser').value='';document.getElementById('aPass').value='';}
+function doLogout(){
+  clearInterval(pollInterval);
+  if(sseSource){sseSource.close();sseSource=null;}
+  clearAdminSession();
+  showScreen('loginScreen');
+  document.getElementById('aUser').value='';document.getElementById('aPass').value='';
+}
 
-// ── Auto-restore admin session on refresh ──────────────────
+// ── Auto-restore ─────────────────────────────────────────────
 (function bootAdmin(){
-  if(restoreAdminSession()&&session.username){
-    showScreen('adminScreen');
-    initAdmin();
-  }
+  if(restoreAdminSession()&&session.username){showScreen('adminScreen');initAdmin();}
 })();
+
 function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>{
-    s.classList.remove('active','visible-section');
-  });
-  const el=document.getElementById(id);
-  el.classList.add('active');
-  // Trigger animation on transition
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active','visible-section'));
+  const el=document.getElementById(id);el.classList.add('active');
   requestAnimationFrame(()=>{
     el.classList.add('visible-section');
-    // Re-trigger animation on inner animated elements
-    el.querySelectorAll('.gb-popup-scale-blur').forEach(el=>{
-      el.style.animation='none';
-      el.offsetHeight; // reflow
-      el.style.animation='';
-    });
+    el.querySelectorAll('.gb-popup-scale-blur').forEach(e=>{e.style.animation='none';e.offsetHeight;e.style.animation='';});
   });
 }
 
-// ── Init ─────────────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────
 async function initAdmin(){
   document.getElementById('adminNameBar').textContent=`${session.name} (${session.username})`;
   document.getElementById('adminDate').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  requestBrowserNotifPermission();
   await loadSettings();await refresh();
   pollInterval=setInterval(refresh,5000);
+  startSSE();
 }
 
-// ── Settings ─────────────────────────────────────────────
+// ── Browser Notification Permission ─────────────────────────
+function requestBrowserNotifPermission(){
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+}
+function sendBrowserNotif(title,body,icon){
+  if('Notification' in window && Notification.permission==='granted'){
+    new Notification(title,{body,icon:icon||'/hi.png'});
+  }
+}
+
+// ── SSE: Real-time events ─────────────────────────────────────
+function startSSE(){
+  if(sseSource) sseSource.close();
+  sseSource=new EventSource(SERVER+'/api/events');
+  sseSource.onmessage=function(e){
+    try{
+      const data=JSON.parse(e.data);
+      handleSSEEvent(data);
+    }catch(err){}
+  };
+  sseSource.onerror=function(){
+    // Auto-reconnect handled by browser
+  };
+}
+
+function handleSSEEvent(data){
+  if(data.type==='connected') return;
+
+  if(data.type==='employee_login'){
+    const notif={
+      id:Date.now(),
+      icon:'🔑',
+      name:data.name,
+      detail:`Logged into employee portal`,
+      time:data.time||new Date().toTimeString().slice(0,5),
+      type:'login'
+    };
+    addNotification(notif);
+    showToast('🔑',`${data.name} logged in`);
+    sendBrowserNotif(`👤 ${data.name} logged in`,`${data.name} (${data.empId}) just opened the employee portal`);
+  }
+
+  if(data.type==='checkin'){
+    const isLate=data.isLate;
+    const notif={
+      id:Date.now(),
+      icon:isLate?'⚠️':'🟢',
+      name:data.name,
+      detail:isLate?`Late check-in at ${data.time}`:`Clocked in at ${data.time}`,
+      time:data.time,
+      type:isLate?'late':'checkin'
+    };
+    addNotification(notif);
+    if(!document.getElementById('panel-live').classList.contains('active')){
+      liveUnread++;updateLiveBadge();
+    }
+    sendBrowserNotif(isLate?`⚠️ ${data.name} — Late`:`🟢 ${data.name} — Clocked In`,
+      isLate?`Late check-in at ${data.time}`:`Session ${(data.sessionIndex||0)+1} started at ${data.time}`);
+  }
+
+  if(data.type==='checkout'){
+    const notif={
+      id:Date.now(),
+      icon:'🔴',
+      name:data.name,
+      detail:`Clocked out at ${data.time} · ${data.totalWork||''}`,
+      time:data.time,
+      type:'logout'
+    };
+    addNotification(notif);
+    if(!document.getElementById('panel-live').classList.contains('active')){
+      liveUnread++;updateLiveBadge();
+    }
+  }
+
+  if(data.type==='data_cleared'){
+    refresh();
+    showToast('🗑️','All data has been cleared.');
+  }
+}
+
+// ── Notification management ───────────────────────────────────
+function addNotification(notif){
+  notifications.unshift(notif);
+  if(notifications.length>50) notifications.pop();
+  unreadCount++;
+  renderNotifBell();
+  renderNotifList();
+  // Auto-show popup for 5s
+  openNotifPopup();
+  if(window._notifAutoClose) clearTimeout(window._notifAutoClose);
+  window._notifAutoClose=setTimeout(()=>closeNotifPopup(),5000);
+}
+
+function renderNotifBell(){
+  const badge=document.getElementById('notifCount');
+  if(unreadCount>0){badge.textContent=unreadCount>99?'99+':unreadCount;badge.classList.add('show');}
+  else badge.classList.remove('show');
+}
+
+function renderNotifList(){
+  const list=document.getElementById('notifList');
+  if(!notifications.length){list.innerHTML='<p style="color:var(--muted);font-size:12px;text-align:center;padding:10px 0;font-family:\'DM Mono\',monospace;">No notifications yet</p>';return;}
+  list.innerHTML=notifications.map(n=>`
+    <div class="notif-item ${n.type==='late'?'late':n.type==='logout'?'logout':''}">
+      <div class="notif-icon">${n.icon}</div>
+      <div class="notif-info">
+        <div class="notif-name">${n.name}</div>
+        <div class="notif-detail">${n.detail}</div>
+      </div>
+      <div class="notif-time">${n.time}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPopup(){
+  const p=document.getElementById('notifPopup');
+  if(p.classList.contains('show')) closeNotifPopup();
+  else openNotifPopup();
+}
+function openNotifPopup(){
+  document.getElementById('notifPopup').classList.add('show');
+  unreadCount=0;renderNotifBell();
+}
+function closeNotifPopup(){document.getElementById('notifPopup').classList.remove('show');}
+function clearNotifs(){notifications=[];unreadCount=0;renderNotifBell();renderNotifList();}
+
+function updateLiveBadge(){
+  const badge=document.getElementById('liveBadge');
+  if(liveUnread>0){badge.textContent=liveUnread;badge.classList.add('show');}
+  else badge.classList.remove('show');
+}
+
+// Close popup when clicking outside
+document.addEventListener('click',function(e){
+  const popup=document.getElementById('notifPopup');
+  const bell=document.querySelector('.notif-bell');
+  if(popup.classList.contains('show')&&!popup.contains(e.target)&&!bell.contains(e.target)){
+    closeNotifPopup();
+  }
+});
+
+// ── Settings ─────────────────────────────────────────────────
 async function loadSettings(){
   const s=await api('GET','/api/settings');
   if(s&&!s.error){
@@ -606,10 +682,24 @@ async function saveSettings(){
   settings=res;await loadSettings();showToast('✅','Settings saved!');
 }
 
-// ── Refresh ───────────────────────────────────────────────
+// ── Clear All Data ────────────────────────────────────────────
+function openClearConfirm(){
+  document.getElementById('clearModal').classList.add('show');
+}
+function closeClearModal(){
+  document.getElementById('clearModal').classList.remove('show');
+}
+async function confirmClearAll(){
+  closeClearModal();
+  const res=await api('DELETE','/api/clear-all');
+  if(res.error){showToast('❌','Failed to clear data.');return;}
+  await refresh();
+  showToast('🗑️','All attendance data cleared. Fresh start!');
+}
+
+// ── Refresh ───────────────────────────────────────────────────
 async function refresh(){
   const [emps,att,activity]=await Promise.all([api('GET','/api/employees'),api('GET','/api/attendance'),api('GET','/api/activity')]);
-  const leaves=[];
   if(!emps||emps.error)return;
   const today=new Date().toISOString().split('T')[0];
   const todayAtt=(att||[]).filter(a=>a.date===today);
@@ -635,7 +725,7 @@ async function refresh(){
 
   const feed=document.getElementById('actFeed');
   if(!(activity||[]).length){feed.innerHTML='<p style="color:var(--muted);font-size:13px;">No activity yet today.</p>';}
-  else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.status==='late'?' · LATE':' · On Time'}`:`OUT · ${a.duration||''}`}</div></div><div class="act-time">${a.time}</div></div>`).join('');
+  else feed.innerHTML=(activity||[]).map(a=>`<div class="act-item ${a.type==='checkout'?'checkout':a.status==='late'?'late':''}"><div class="act-icon">${a.type==='checkin'?'🟢':'🔴'}</div><div class="act-info"><div class="act-name">${a.name}</div><div class="act-detail">${a.type==='checkin'?`IN${a.note?' · LATE':' · On Time'}`:`OUT`}</div></div><div class="act-time">${a.time}</div></div>`).join('');
 
   document.getElementById('empTable').innerHTML=(emps||[]).map(e=>`<tr><td><strong>${e.name}</strong></td><td class="td-mono">${e.id}</td><td>${e.dept||'—'}</td><td style="font-size:11px;">${e.email||'—'}</td><td class="td-mono">${e.password||'—'}</td><td><div class="action-btns"><button class="btn btn-danger btn-sm" onclick="removeEmployee('${e.id}')">Remove</button></div></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No employees</td></tr>';
 
@@ -643,25 +733,23 @@ async function refresh(){
   document.getElementById('attTable').innerHTML=sorted.map(r=>{
     const sessions=r.sessions||[];
     const sessLine=sessions.length?sessions.map((s,i)=>`S${i+1}:${s.in||'—'}→${s.out||'…'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
-    const lateNote=(sessions.length>=2&&sessions[1].lateNote)?` ⚠ ${sessions[1].lateNote}`:'';
-    const sc=(r.status||'absent').replace(/\s+/g,'-');return`<tr><td class="td-mono" style="white-space:nowrap;">${r.date}</td><td>${r.name||r.empId}</td><td class="td-mono" style="font-size:11px;">${sessLine}${lateNote?`<br><span style="color:var(--warn);font-size:10px;">${lateNote}</span>`:''}</td><td class="td-mono" style="white-space:nowrap;">${r.totalWork||r.duration||'—'}</td><td><span class="att-badge badge-${sc}">${r.status}</span></td></tr>`;
+    const sc=(r.status||'absent').replace(/\s+/g,'-');
+    return`<tr><td class="td-mono" style="white-space:nowrap;">${r.date}</td><td>${r.name||r.empId}</td><td class="td-mono" style="font-size:11px;">${sessLine}</td><td class="td-mono" style="white-space:nowrap;">${r.totalWork||'—'}</td><td><span class="att-badge badge-${sc}">${r.status}</span></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No records</td></tr>';
-
-  // Leave panel removed
 }
 
-// ── Panel nav ─────────────────────────────────────────────
+// ── Panel nav ─────────────────────────────────────────────────
 function showPanel(name,el){
   document.querySelectorAll('.sidebar-item').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
+  if(name==='live'){liveUnread=0;updateLiveBadge();}
   if(name==='settings')loadSettings();else refresh();
-  // Close sidebar on mobile after selection
   if(window.innerWidth<768)closeSidebar();
 }
 
-// ── Employee CRUD ─────────────────────────────────────────
+// ── Employee CRUD ─────────────────────────────────────────────
 function openAddEmp(){document.getElementById('addEmpModal').classList.add('show');}
 function closeModal(){document.getElementById('addEmpModal').classList.remove('show');}
 async function addEmployee(){
@@ -679,21 +767,19 @@ async function removeEmployee(id){
   await api('DELETE',`/api/employees/${encodeURIComponent(id)}`);
   await refresh();showToast('🗑️','Employee removed.');
 }
-// handleReq removed — leave approval disabled
 
-// ── Export ────────────────────────────────────────────────
+// ── Export ────────────────────────────────────────────────────
 async function exportCSV(type){
-  const [emps,att,leaves]=await Promise.all([api('GET','/api/employees'),api('GET','/api/attendance'),api('GET','/api/leaves')]);
+  const [emps,att]=await Promise.all([api('GET','/api/employees'),api('GET','/api/attendance')]);
   let csv='',filename='';
-  if(type==='attendance'){csv='Date,ID,Name,Sessions,Total,Status\n';(att||[]).forEach(r=>{const sess=r.sessions?r.sessions.map(s=>`${s.in}-${s.out||'--'}`).join('/'):`${r.checkIn||''}-${r.checkOut||''}`;csv+=`${r.date},${r.empId},${r.name||''},${sess},${r.totalWork||r.duration||''},${r.status}\n`;});filename='attendance.csv';}
+  if(type==='attendance'){csv='Date,ID,Name,Sessions,Total,Status\n';(att||[]).forEach(r=>{const sess=r.sessions?r.sessions.map(s=>`${s.in}-${s.out||'--'}`).join('/'):`${r.checkIn||''}-${r.checkOut||''}`;csv+=`${r.date},${r.empId},${r.name||''},${sess},${r.totalWork||''},${r.status}\n`;});filename='attendance.csv';}
   else if(type==='employees'){csv='ID,Name,Dept,Email\n';(emps||[]).forEach(e=>csv+=`${e.id},${e.name},${e.dept||''},${e.email||''}\n`);filename='employees.csv';}
-  // Leave export removed
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
   showToast('📥','CSV exported.');
 }
 
-// ── Toast ─────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────
 let toastTimer;
 function showToast(icon,msg){
   clearTimeout(toastTimer);

@@ -30,7 +30,6 @@ const Activity = mongoose.model('Activity', new mongoose.Schema({
 }));
 
 // ================= SETTINGS =================
-// 8-hour shift  |  S1: 09:30–13:30  |  Break 45 min  |  S2: 14:15–17:30
 let settings = {
   workHours: 8,
   startTime: '09:30',
@@ -41,6 +40,30 @@ let settings = {
   session2Start: '14:15',
   adminPhone: ''
 };
+
+// ================= SSE: LIVE NOTIFICATIONS =================
+let sseClients = [];
+
+function pushEvent(data) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
+  sseClients = sseClients.filter(res => {
+    try { res.write(payload); return true; }
+    catch (e) { return false; }
+  });
+}
+
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+  res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
+  sseClients.push(res);
+  req.on('close', () => {
+    sseClients = sseClients.filter(c => c !== res);
+  });
+});
 
 // ================= HELPERS =================
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -83,6 +106,10 @@ app.post('/api/auth/employee', async (req, res) => {
   const user = await Employee.findOne({ id: empId });
   if (!user || user.password !== password)
     return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+
+  // Push SSE login notification to all admin clients
+  pushEvent({ type: 'employee_login', empId: user.id, name: user.name, dept: user.dept, time: new Date().toTimeString().slice(0,5) });
+
   res.json({ ok: true, emp: user });
 });
 
@@ -127,7 +154,21 @@ app.put('/api/settings', (req, res) => {
   res.json(settings);
 });
 
-// ================= LEAVE (apply only — no admin approval) =================
+// ================= CLEAR ALL DATA =================
+app.delete('/api/clear-all', async (req, res) => {
+  try {
+    await Promise.all([
+      Attendance.deleteMany({}),
+      Activity.deleteMany({})
+    ]);
+    pushEvent({ type: 'data_cleared' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to clear data' });
+  }
+});
+
+// ================= LEAVE =================
 let leaves = [];
 
 app.get('/api/leaves',           (req, res) => res.json(leaves));
@@ -152,17 +193,14 @@ app.post('/api/checkin', async (req, res) => {
     rec = new Attendance({ empId, name, date, sessions: [], totalWork: '0h 00m', status: 'present' });
   }
 
-  // Block if already clocked in
   if (rec.sessions.find(s => s.in && !s.out))
     return res.json({ error: 'Already clocked in' });
 
-  // Max 2 sessions per day
   if (rec.sessions.length >= 2)
     return res.json({ error: 'Both sessions already completed for today' });
 
-  const sessionIndex = rec.sessions.length; // 0 = S1, 1 = S2
+  const sessionIndex = rec.sessions.length;
 
-  // ── Enforce minimum break between sessions ────────────────
   if (sessionIndex === 1) {
     const s1 = rec.sessions[0];
     if (s1 && s1.out) {
@@ -174,7 +212,6 @@ app.post('/api/checkin', async (req, res) => {
     }
   }
 
-  // ── Late detection (applies to BOTH sessions) ─────────────
   let lateNote = '', isLate = false;
 
   if (sessionIndex === 0) {
@@ -197,6 +234,9 @@ app.post('/api/checkin', async (req, res) => {
   await rec.save();
 
   await Activity.create({ type: 'checkin', empId, name, time: checkIn, date, note: lateNote || '' });
+
+  // Push SSE check-in event
+  pushEvent({ type: 'checkin', empId, name, time: checkIn, date, isLate, lateNote, sessionIndex });
 
   res.json({ ok: true, rec, isLate, lateNote, sessionIndex, adminPhone: settings.adminPhone });
 });
@@ -232,6 +272,9 @@ app.post('/api/checkout', async (req, res) => {
 
   await rec.save();
   await Activity.create({ type: 'checkout', empId, name: rec.name, time: checkOut, date });
+
+  // Push SSE checkout event
+  pushEvent({ type: 'checkout', empId, name: rec.name, time: checkOut, date, totalWork: rec.totalWork, status: rec.status });
 
   res.json(rec);
 });
