@@ -471,47 +471,41 @@ const SERVER = window.location.origin;
 
 async function api(method,path,data){
   try{
-    const r=await fetch(SERVER+path,{method,headers:{'Content-Type':'application/json'},body:data?JSON.stringify(data):undefined});
+    const r=await fetch(SERVER+path,{
+      method,
+      headers:{'Content-Type':'application/json'},
+      body:data?JSON.stringify(data):undefined
+    });
     return await r.json();
   }catch(e){return{error:e.message};}
 }
 
-// ── State ──────────────────────────────────────────────────
-let session={},settings={workHours:8,startTime:'09:30',endTime:'17:30',graceMins:15,breakMins:45,session1End:'13:30',session2Start:'14:15',adminPhone:''};
-let timerInterval=null,clockInterval=null,checkInTs=null;
-let sessionCount=0,totalWorkedSecs=0;
-const CIRC=402;
+// STATE
+let session={},settings={workHours:8,startTime:'09:30',endTime:'17:30',graceMins:15};
+let checkInTs=null,sessionCount=0,totalWorkedSecs=0;
 
-// ── Server check ────────────────────────────────────────────
-async function checkServer(){
-  const s=await api('GET','/api/settings');
-  const dot=document.getElementById('sDot'),st=document.getElementById('sStatus');
-  if(s&&!s.error){settings=s;dot.className='s-dot online';st.textContent='Server online ✓';}
-  else{dot.className='s-dot offline';st.textContent='Server offline';}
+// TAB SWITCH
+function switchTab(tab){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  if(tab==='home'){
+    document.getElementById('tab-home-1').classList.add('active');
+    document.getElementById('tab-home-2').classList.add('active');
+  } else {
+    document.getElementById('tab-history').classList.add('active');
+  }
 }
-checkServer();
 
-// ── Login ──────────────────────────────────────────────────
+// LOGIN
 async function doLogin(){
   const empId=document.getElementById('loginId').value.trim();
   const password=document.getElementById('loginPass').value.trim();
-  const err=document.getElementById('loginError');err.style.display='none';
-
-  if(!empId||!password){
-    err.textContent='Enter your ID and password.';
-    err.style.display='block';
-    return;
-  }
-
   const res=await api('POST','/api/auth/employee',{empId,password});
-
   if(res.ok){
-    session={empId:res.emp.id,name:res.emp.name};
+    session=res.emp;
     showScreen('empScreen');
-    initDashboard();
+    startClock();
   }else{
-    err.textContent=res.error||'Invalid credentials.';
-    err.style.display='block';
+    alert("Login failed");
   }
 }
 
@@ -520,68 +514,63 @@ function showScreen(id){
   document.getElementById(id).classList.add('active');
 }
 
-// ── CLOCK ──────────────────────────────────────────────────
+// CLOCK
 function startClock(){
-  clearInterval(clockInterval);
-
-  function tick(){
+  setInterval(()=>{
     const now=new Date();
     document.getElementById('liveClock').textContent=now.toLocaleTimeString();
-    document.getElementById('liveDate').textContent=now.toDateString();
     checkNotice(now);
-  }
-
-  tick();
-  clockInterval=setInterval(tick,1000);
+  },1000);
 }
 
-// ✅ FIXED FUNCTION (MAIN ERROR HERE)
+// ✅ FIXED NOTICE FUNCTION
 function checkNotice(now){
   const box=document.getElementById('empNotice');
-
-  const [sh,sm]=settings.startTime.split(':').map(Number);
-  const [eh,em]=settings.endTime.split(':').map(Number);
-
-  const startMin=sh*60+sm;
-  const endMin=eh*60+em;
   const nowMin=now.getHours()*60+now.getMinutes();
 
-  if(nowMin<startMin){
-    box.innerHTML=`<div class="emp-notice info">🕘 Session starts at ${settings.startTime}</div>`;
-    return;
-  }
-
-  if(checkInTs){
-    box.innerHTML=`<div class="emp-notice default">✅ Session running</div>`;
-    return;
-  }
-
-  // ✅ FIXED BLOCK (no syntax error)
   if(!checkInTs){
     if(sessionCount===0){
-      box.innerHTML = nowMin <= endMin
-        ? `<div class="emp-notice warn">⚠ Not clocked in yet!</div>`
-        : `<div class="emp-notice warn">⚠ Office hours ended.</div>`;
+      box.innerHTML=`⚠ Not clocked in yet!`;
     } else if(sessionCount===1){
-      const s2t=settings.session2Start||'14:15';
-      box.innerHTML=`<div class="emp-notice info">⏸ Break — Session 2 starts at ${s2t}</div>`;
+      box.innerHTML=`⏸ Break time`;
     } else {
-      box.innerHTML=`<div class="emp-notice success">✅ Work complete!</div>`;
+      box.innerHTML=`✅ Work complete`;
     }
     return;
   }
+
+  box.innerHTML=`✅ Working`;
 }
 
-// ── INIT ───────────────────────────────────────────────────
-async function initDashboard(){
-  document.getElementById('empNameBar').textContent=session.name;
-  startClock();
+// CLOCK IN
+async function checkIn(){
+  const now=new Date();
+  checkInTs=now;
+  sessionCount++;
+
+  document.getElementById('checkInBtn').disabled=true;
+  document.getElementById('checkOutBtn').disabled=false;
+
+  await api('POST','/api/checkin',{
+    empId:session.id,
+    name:session.name,
+    checkIn:now.toTimeString().slice(0,5)
+  });
 }
 
-// ── TOAST ──────────────────────────────────────────────────
-function showToast(icon,msg){
-  document.getElementById('toastIcon').textContent=icon;
-  document.getElementById('toastMsg').textContent=msg;
+// CLOCK OUT
+async function checkOut(){
+  const now=new Date();
+
+  await api('POST','/api/checkout',{
+    empId:session.id,
+    checkOut:now.toTimeString().slice(0,5)
+  });
+
+  checkInTs=null;
+
+  document.getElementById('checkInBtn').disabled=false;
+  document.getElementById('checkOutBtn').disabled=true;
 }
 </script>
 </body>
