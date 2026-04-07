@@ -39,9 +39,9 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 .login-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
 .brand{text-align:center;margin-bottom:32px;}
 .brand-logo{max-width:200px;height:auto;display:block;margin:0 auto 14px;border-radius:8px;}
-.brand p{color:var(--muted);font-size:13px;font-family:'DM Mono',monospace;}
+.brand p{color:var();font-size:13px;font-family:'DM Mono',monospace;}
 .field{margin-bottom:16px;}
-.field label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var();margin-bottom:8px;}
 .field input,.field select{
   width:100%;padding:13px 16px;background:var(--surface2);border:1px solid var(--border);
   border-radius:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:16px;/* 16px prevents iOS zoom */
@@ -147,7 +147,6 @@ svg.ring{transform:rotate(-90deg);}
 .badge-late{background:rgba(255,107,53,.1);color:var(--warn);}
 .badge-holiday{background:rgba(168,85,247,.1);color:var(--holiday);}
 .badge-absent{background:rgba(255,56,96,.1);color:var(--danger);}
-.badge-half-day{background:rgba(255,107,53,.1);color:var(--warn);}
 
 /* Leave form */
 .holiday-form .field{margin-bottom:12px;}
@@ -405,7 +404,6 @@ svg.ring{transform:rotate(-90deg);}
           <button class="btn btn-secondary" id="checkOutBtn" onclick="checkOut()" disabled>◼ Clock Out</button>
         </div>
         <div class="session-row" id="sessionChips"></div>
-        <div id="adminNoticeBox" style="margin-top:10px;"></div>
       </div>
     </div>
 
@@ -427,7 +425,7 @@ svg.ring{transform:rotate(-90deg);}
         <div class="timer-stats">
           <div class="stat-box"><div class="s-label">Session</div><div class="s-val" id="sessionLabel">1 of 2</div></div>
           <div class="stat-box"><div class="s-label">Remaining</div><div class="s-val" id="remainingTime">--:--</div></div>
-          <div class="stat-box"><div class="s-label">Target</div><div class="s-val" id="targetHours">8h</div></div>
+          <div class="stat-box"><div class="s-label">Target</div><div class="s-val" id="targetHours">9h</div></div>
           <div class="stat-box"><div class="s-label">Total</div><div class="s-val" id="totalToday">0h 00m</div></div>
         </div>
       </div>
@@ -441,7 +439,29 @@ svg.ring{transform:rotate(-90deg);}
       </div>
     </div>
 
-    <!-- Leave feature removed — contact admin by phone -->
+    <!-- TAB: Leave -->
+    <div class="tab-panel" id="tab-leave-1">
+      <div class="card">
+        <div class="card-title">Apply for Leave</div>
+        <div class="holiday-form">
+          <div class="field"><label>From Date</label><input type="date" id="hFrom"/></div>
+          <div class="field"><label>To Date</label><input type="date" id="hTo"/></div>
+          <div class="field">
+            <label>Leave Type</label>
+            <select id="hType"><option>Casual Leave</option><option>Sick Leave</option><option>Annual Leave</option><option>Emergency Leave</option></select>
+          </div>
+          <div class="field"><label>Reason</label><textarea id="hReason" placeholder="Briefly describe your reason..."></textarea></div>
+          <button class="leave-btn" onclick="submitLeave()">✈ Submit Leave Request</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel full-col" id="tab-leave-2">
+      <div class="card">
+        <div class="card-title">My Leave Requests</div>
+        <div class="req-list" id="myRequests"><p style="color:var(--muted);font-size:13px;">Loading...</p></div>
+      </div>
+    </div>
 
   </div><!-- /emp-content -->
 
@@ -455,7 +475,10 @@ svg.ring{transform:rotate(-90deg);}
       <span class="nav-icon">📋</span>
       <span class="nav-label">History</span>
     </button>
-
+    <button class="nav-item" id="nav-leave" onclick="switchTab('leave')">
+      <span class="nav-icon">✈️</span>
+      <span class="nav-label">Leave</span>
+    </button>
     <button class="nav-item" id="nav-logout" onclick="doLogout()">
       <span class="nav-icon">🚪</span>
       <span class="nav-label">Logout</span>
@@ -471,106 +494,261 @@ const SERVER = window.location.origin;
 
 async function api(method,path,data){
   try{
-    const r=await fetch(SERVER+path,{
-      method,
-      headers:{'Content-Type':'application/json'},
-      body:data?JSON.stringify(data):undefined
-    });
+    const r=await fetch(SERVER+path,{method,headers:{'Content-Type':'application/json'},body:data?JSON.stringify(data):undefined});
     return await r.json();
   }catch(e){return{error:e.message};}
 }
 
-// STATE
-let session={},settings={workHours:8,startTime:'09:30',endTime:'17:30',graceMins:15};
-let checkInTs=null,sessionCount=0,totalWorkedSecs=0;
+// ── State ──────────────────────────────────────────────────
+let session={},settings={workHours:9,startTime:'09:30',endTime:'18:30',graceMins:15};
+let timerInterval=null,clockInterval=null,checkInTs=null;
+let sessionCount=0,totalWorkedSecs=0;
+const CIRC=402;
 
-// TAB SWITCH
+// ── Tab switching (mobile) ──────────────────────────────────
 function switchTab(tab){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  if(tab==='home'){
-    document.getElementById('tab-home-1').classList.add('active');
-    document.getElementById('tab-home-2').classList.add('active');
-  } else {
-    document.getElementById('tab-history').classList.add('active');
-  }
+  // toggle panels
+  const homeIds=['tab-home-1','tab-home-2'];
+  const histIds=['tab-history'];
+  const leaveIds=['tab-leave-1','tab-leave-2'];
+  const allPanels=[...homeIds,...histIds,...leaveIds];
+  const show = tab==='home'?homeIds:tab==='history'?histIds:leaveIds;
+  allPanels.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle('active',show.includes(id));
+  });
+  // toggle nav active
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navBtn=document.getElementById('nav-'+tab);
+  if(navBtn) navBtn.classList.add('active');
 }
 
-// LOGIN
+// ── Server check ────────────────────────────────────────────
+async function checkServer(){
+  const s=await api('GET','/api/settings');
+  const dot=document.getElementById('sDot'),st=document.getElementById('sStatus');
+  if(s&&!s.error){settings=s;dot.className='s-dot online';st.textContent='Server online ✓';}
+  else{dot.className='s-dot offline';st.textContent='Server offline';}
+}
+checkServer();
+
+// ── Login / Logout ──────────────────────────────────────────
 async function doLogin(){
   const empId=document.getElementById('loginId').value.trim();
   const password=document.getElementById('loginPass').value.trim();
+  const err=document.getElementById('loginError');err.style.display='none';
+  if(!empId||!password){err.textContent='Enter your ID and password.';err.style.display='block';return;}
   const res=await api('POST','/api/auth/employee',{empId,password});
   if(res.ok){
-    session=res.emp;
-    showScreen('empScreen');
-    startClock();
-  }else{
-    alert("Login failed");
+    session={empId:res.emp.id,name:res.emp.name,dept:res.emp.dept};
+    showScreen('empScreen');initDashboard();
+  }else{err.textContent=res.error||'Invalid credentials.';err.style.display='block';}
+}
+function doLogout(){
+  clearInterval(timerInterval);clearInterval(clockInterval);
+  session={};checkInTs=null;sessionCount=0;totalWorkedSecs=0;
+  showScreen('loginScreen');
+  document.getElementById('loginId').value='';document.getElementById('loginPass').value='';
+  checkServer();
+}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.remove('active','visible-section');
+  });
+  const el=document.getElementById(id);
+  el.classList.add('active');
+  requestAnimationFrame(()=>{
+    el.classList.add('visible-section');
+    el.querySelectorAll('.gb-popup-scale-blur').forEach(el=>{
+      el.style.animation='none';
+      el.offsetHeight;
+      el.style.animation='';
+    });
+  });
+}
+
+// ── Init dashboard ─────────────────────────────────────────
+async function initDashboard(){
+  document.getElementById('empNameBar').textContent=`${session.name} (${session.empId})`;
+  const s=await api('GET','/api/settings');
+  if(s&&!s.error)settings=s;
+  document.getElementById('targetHours').textContent=settings.workHours+'h';
+  startClock();
+  await loadHistoryAndState();
+  loadLeaves();
+  setInterval(loadLeaves,30000);
+  // show logout on desktop
+  document.getElementById('logoutBtn').style.display='';
+}
+
+// ── Clock ──────────────────────────────────────────────────
+function startClock(){
+  clearInterval(clockInterval);
+  function tick(){
+    const now=new Date();
+    document.getElementById('liveClock').textContent=now.toLocaleTimeString('en-US',{hour12:true});
+    document.getElementById('liveDate').textContent=now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    checkNotice(now);
+  }
+  tick();clockInterval=setInterval(tick,1000);
+}
+function checkNotice(now){
+  const box=document.getElementById('empNotice');
+  const [sh,sm]=settings.startTime.split(':').map(Number);
+  const [eh,em]=settings.endTime.split(':').map(Number);
+  const startMin=sh*60+sm,endMin=eh*60+em,nowMin=now.getHours()*60+now.getMinutes();
+  if(nowMin<startMin){box.innerHTML=`<div class="emp-notice info">🕘 Opens at ${settings.startTime}</div>`;return;}
+  if(nowMin>=startMin&&nowMin<=startMin+settings.graceMins&&sessionCount===0&&!checkInTs){box.innerHTML=`<div class="emp-notice default">⚡ On time! Clock in now.</div>`;return;}
+  if(checkInTs){box.innerHTML=`<div class="emp-notice default">✅ Session ${sessionCount} in progress</div>`;return;}
+  if(!checkInTs){
+    if(sessionCount===0)box.innerHTML=nowMin<=endMin?`<div class="emp-notice warn">⚠ Not clocked in yet!</div>`:`<div class="emp-notice warn">⚠ Office hours ended.</div>`;
+    else if(sessionCount===1)box.innerHTML=`<div class="emp-notice info">⏸ On break — clock in for Session 2</div>`;
+    else box.innerHTML=`<div class="emp-notice success">✅ Work complete!</div>`;
+    return;
   }
 }
 
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+// ── Clock In ────────────────────────────────────────────────
+async function checkIn(){
+  if(sessionCount>=2){showToast('⚠️','Already completed 2 sessions');return;}
+  if(checkInTs){showToast('⚠️','Already clocked in!');return;}
+  const now=new Date(),checkInStr=now.toTimeString().slice(0,5);
+  const [sh,sm]=settings.startTime.split(':').map(Number);
+  const nowMin=now.getHours()*60+now.getMinutes();
+  const status=sessionCount===0?(nowMin<=sh*60+sm+settings.graceMins?'present':'late'):'present';
+  const res=await api('POST','/api/checkin',{empId:session.empId,name:session.name,checkIn:checkInStr,status});
+  if(res.error){showToast('❌',res.error);return;}
+  checkInTs=now;sessionCount++;
+  document.getElementById('checkInBtn').disabled=true;
+  document.getElementById('checkOutBtn').disabled=false;
+  document.getElementById('sessionLabel').textContent=`${sessionCount} of 2`;
+  updateSessionChips(res.rec);startTimer();
+  if(res.lateMsg)showToast('⚠️',res.lateMsg);
+  else if(sessionCount===2)showToast('✅',`Session 2 started at ${checkInStr}`);
+  else showToast('✅',`Clocked in at ${checkInStr}${status==='late'?' (Late)':''}`);
 }
 
-// CLOCK
-function startClock(){
-  setInterval(()=>{
-    const now=new Date();
-    document.getElementById('liveClock').textContent=now.toLocaleTimeString();
-    checkNotice(now);
+// ── Clock Out ───────────────────────────────────────────────
+async function checkOut(){
+  if(!checkInTs){showToast('⚠️','Not clocked in!');return;}
+  const now=new Date(),checkOutStr=now.toTimeString().slice(0,5);
+  const res=await api('POST','/api/checkout',{empId:session.empId,name:session.name,checkOut:checkOutStr});
+  if(res.error){showToast('❌',res.error);return;}
+  const sessionSecs=Math.floor((now-checkInTs)/1000);
+  totalWorkedSecs+=sessionSecs;
+  clearInterval(timerInterval);timerInterval=null;checkInTs=null;
+  document.getElementById('checkInBtn').disabled=false;
+  document.getElementById('checkOutBtn').disabled=true;
+  document.getElementById('totalToday').textContent=res.totalWork||fmt(totalWorkedSecs);
+  updateSessionChips(res);
+  const TARGET=settings.workHours*3600;
+  if(sessionCount<2){
+    setPill('break');
+    showToast('⏸',totalWorkedSecs>=TARGET?`Full Day! Total: ${res.totalWork}`:'Break started — Clock in for Session 2');
+  }else{
+    setPill('out');
+    showToast(totalWorkedSecs<TARGET?'⚠️':'✅',totalWorkedSecs<TARGET?`Half Day — Absent (${fmt(totalWorkedSecs)} worked)`:`Full Day! Total: ${res.totalWork||fmt(totalWorkedSecs)}`);
+  }
+  await loadHistoryAndState();
+}
+
+// ── Timer ───────────────────────────────────────────────────
+function startTimer(){
+  clearInterval(timerInterval);
+  const TARGET=settings.workHours*3600;
+  timerInterval=setInterval(()=>{
+    if(!checkInTs)return;
+    const sessionSecs=Math.floor((new Date()-checkInTs)/1000);
+    const totalSecs=totalWorkedSecs+sessionSecs;
+    const pct=Math.min(totalSecs/TARGET,1),rem=Math.max(TARGET-totalSecs,0);
+    document.getElementById('timerElapsed').textContent=fmt(sessionSecs);
+    document.getElementById('timerPct').textContent=Math.floor(pct*100)+'%';
+    document.getElementById('remainingTime').textContent=fmt(rem);
+    document.getElementById('totalToday').textContent=fmt(totalSecs);
+    document.getElementById('timerRing').style.strokeDashoffset=CIRC*(1-pct);
+    if(totalSecs>=TARGET)document.getElementById('timerRing').style.stroke='var(--accentL)';
   },1000);
 }
 
-// ✅ FIXED NOTICE FUNCTION
-function checkNotice(now){
-  const box=document.getElementById('empNotice');
-  const nowMin=now.getHours()*60+now.getMinutes();
+function updateSessionChips(rec){
+  const chips=document.getElementById('sessionChips');
+  if(!rec||!rec.sessions){chips.innerHTML='';return;}
+  chips.innerHTML=rec.sessions.map((s,i)=>`<span class="session-chip ${!s.out?'active':''}">S${i+1}: ${s.in}→${s.out||'now'}</span>`).join('');
+}
+function fmt(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
+function setPill(state){
+  const p=document.getElementById('statusPill');
+  const map={present:['pill-in','● IN'],late:['pill-late','● LATE'],break:['pill-break','⏸ BREAK'],out:['pill-out','● OFF']};
+  const [cls,txt]=map[state]||map.out;
+  p.className='status-pill '+cls;p.textContent=txt;
+}
 
-  if(!checkInTs){
-    if(sessionCount===0){
-      box.innerHTML=`⚠ Not clocked in yet!`;
-    } else if(sessionCount===1){
-      box.innerHTML=`⏸ Break time`;
-    } else {
-      box.innerHTML=`✅ Work complete`;
-    }
-    return;
+// ── History & state ─────────────────────────────────────────
+async function loadHistoryAndState(){
+  const res=await api('GET',`/api/attendance/${session.empId}`);
+  const rows=Array.isArray(res)?res:[];
+  const el=document.getElementById('attHistory');
+  if(!rows.length){el.innerHTML='<p style="color:var(--muted);font-size:13px;">No records yet.</p>';}
+  else{
+    const sorted=[...rows].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+    el.innerHTML=sorted.map(r=>{
+      const st=r.sessions?r.sessions.map(s=>`${s.in}→${s.out||'--'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
+      const tot=r.totalWork||r.duration||'—';
+      return`<div class="att-row"><span class="att-date">${r.date}</span><span class="att-sessions">${st}</span><span style="font-family:'DM Mono',monospace;font-size:11px;">${tot}</span><span class="att-badge badge-${r.status||'absent'}">${r.status||'absent'}</span></div>`;
+    }).join('');
   }
-
-  box.innerHTML=`✅ Working`;
+  const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  const today=d.toISOString().split('T')[0];
+  const tr=rows.find(r=>r.date===today);
+  if(tr){
+    sessionCount=tr.sessions?tr.sessions.length:0;
+    const open=tr.sessions?tr.sessions.find(s=>s.in&&!s.out):null;
+    totalWorkedSecs=(tr.sessions||[]).reduce((acc,s)=>{
+      if(s.in&&s.out){const[h1,m1]=s.in.split(':').map(Number),[h2,m2]=s.out.split(':').map(Number);return acc+((h2*3600+m2*60)-(h1*3600+m1*60));}
+      return acc;
+    },0);
+    if(open){
+      const[h,m]=open.in.split(':').map(Number),now=new Date();
+      checkInTs=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m);
+      document.getElementById('checkInBtn').disabled=true;
+      document.getElementById('checkOutBtn').disabled=false;
+      setPill(sessionCount>=2?'late':'present');startTimer();
+    }else if(sessionCount===1)setPill('break');
+    document.getElementById('sessionLabel').textContent=`${Math.max(sessionCount,1)} of 2`;
+    document.getElementById('totalToday').textContent=tr.totalWork||fmt(totalWorkedSecs);
+    updateSessionChips(tr);
+  }
 }
 
-// CLOCK IN
-async function checkIn(){
-  const now=new Date();
-  checkInTs=now;
-  sessionCount++;
-
-  document.getElementById('checkInBtn').disabled=true;
-  document.getElementById('checkOutBtn').disabled=false;
-
-  await api('POST','/api/checkin',{
-    empId:session.id,
-    name:session.name,
-    checkIn:now.toTimeString().slice(0,5)
-  });
+// ── Leaves ──────────────────────────────────────────────────
+async function loadLeaves(){
+  const res=await api('GET',`/api/leaves/${session.empId}`);
+  const reqs=Array.isArray(res)?res:[];
+  const el=document.getElementById('myRequests');
+  if(!reqs.length){el.innerHTML='<p style="color:var(--muted);font-size:13px;">No leave requests.</p>';return;}
+  el.innerHTML=reqs.map(r=>`<div class="req-card ${r.status}"><div><div class="ri-name">${r.type}</div><div class="ri-dates">${r.from} → ${r.to}</div><div class="ri-reason">${r.reason}</div></div><span class="att-badge badge-${r.status||'holiday'}">${(r.status||'pending').toUpperCase()}</span></div>`).join('');
+}
+async function submitLeave(){
+  const from=document.getElementById('hFrom').value,to=document.getElementById('hTo').value;
+  const type=document.getElementById('hType').value,reason=document.getElementById('hReason').value.trim();
+  if(!from||!to||!reason){showToast('⚠️','Fill all fields.');return;}
+  const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  const res=await api('POST','/api/leaves',{id:'REQ'+Date.now(),empId:session.empId,name:session.name,from,to,type,reason,status:'pending',applied:d.toISOString().split('T')[0]});
+  if(res.error){showToast('❌','Server error.');return;}
+  document.getElementById('hFrom').value='';document.getElementById('hTo').value='';document.getElementById('hReason').value='';
+  loadLeaves();showToast('✈️','Leave submitted! Awaiting approval.');
+  // switch to my requests on mobile
+  if(window.innerWidth<768)switchTab('leave');
 }
 
-// CLOCK OUT
-async function checkOut(){
-  const now=new Date();
-
-  await api('POST','/api/checkout',{
-    empId:session.id,
-    checkOut:now.toTimeString().slice(0,5)
-  });
-
-  checkInTs=null;
-
-  document.getElementById('checkInBtn').disabled=false;
-  document.getElementById('checkOutBtn').disabled=true;
+// ── Toast ────────────────────────────────────────────────────
+let toastTimer;
+function showToast(icon,msg){
+  clearTimeout(toastTimer);
+  document.getElementById('toastIcon').textContent=icon;
+  document.getElementById('toastMsg').textContent=msg;
+  const t=document.getElementById('toast');t.classList.add('show');
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 </script>
 </body>
