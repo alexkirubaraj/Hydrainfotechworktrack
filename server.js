@@ -214,14 +214,20 @@ app.post('/api/checkout', async (req, res) => {
 
   open.out = checkOut;
 
-  const completed = rec.sessions.filter(s => s.in && s.out).length;
-  rec.totalWork = secsToStr(calcTotalSeconds(rec.sessions));
+  const totalSecs = calcTotalSeconds(rec.sessions);
+  rec.totalWork = secsToStr(totalSecs);
 
-  // Present = both sessions done | Half Day = only 1 session done
-  if (completed >= 2) {
+  // Status based on total hours worked:
+  // >= 8h = present | >= 4h = half day | < 4h = absent
+  const FULL_DAY_SECS = 8 * 3600;
+  const HALF_DAY_SECS = 4 * 3600;
+
+  if (totalSecs >= FULL_DAY_SECS) {
     if (rec.status !== 'late') rec.status = 'present';
-  } else {
+  } else if (totalSecs >= HALF_DAY_SECS) {
     rec.status = 'half day';
+  } else {
+    rec.status = 'absent';
   }
 
   await rec.save();
