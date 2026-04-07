@@ -47,9 +47,9 @@ const Activity = mongoose.model('Activity', new mongoose.Schema({
 
 // ================= TEMP DATA =================
 let settings = {
-  workHours: 9,
+  workHours: 8,
   startTime: '09:30',
-  endTime: '18:30',
+  endTime: '17:30',
   graceMins: 15,
   breakMins: 45
 };
