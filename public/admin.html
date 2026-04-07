@@ -135,6 +135,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .badge-late{background:rgba(255,107,53,.1);color:var(--warn);}
 .badge-holiday{background:rgba(168,85,247,.1);color:var(--holiday);}
 .badge-absent{background:rgba(255,56,96,.1);color:var(--danger);}
+.badge-half-day{background:rgba(255,107,53,.08);color:var(--warn);}
 
 /* ══ ACTIVITY FEED ═══════════════════════════════════════ */
 .activity-feed{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;}
@@ -375,7 +376,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
       <div class="sidebar-section">Manage</div>
       <div class="sidebar-item" onclick="showPanel('employees',this)"><span class="si-icon">👥</span>Employees</div>
       <div class="sidebar-item" onclick="showPanel('attendance',this)"><span class="si-icon">📋</span>Attendance</div>
-      <div class="sidebar-item" onclick="showPanel('requests',this)"><span class="si-icon">🗓</span>Leave Requests<span class="notif-dot" id="notifDot" style="display:none"></span></div>
+
       <div class="sidebar-section">Configure</div>
       <div class="sidebar-item" onclick="showPanel('settings',this)"><span class="si-icon">⚙️</span>Work Hours</div>
       <div class="sidebar-item" onclick="showPanel('export',this)"><span class="si-icon">📤</span>Export</div>
@@ -393,7 +394,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <div class="stat-card sc-green"><div class="sc-num" id="s-present">0</div><div class="sc-label">Present</div></div>
           <div class="stat-card sc-blue"><div class="sc-num" id="s-total">0</div><div class="sc-label">Employees</div></div>
           <div class="stat-card sc-orange"><div class="sc-num" id="s-late">0</div><div class="sc-label">Late</div></div>
-          <div class="stat-card sc-purple"><div class="sc-num" id="s-pending">0</div><div class="sc-label">Pending</div></div>
+          <div class="stat-card sc-purple"><div class="sc-num" id="s-pending">0</div><div class="sc-label">Half Day</div></div>
         </div>
         <div class="table-wrap"><div class="table-scroll">
           <table>
@@ -439,13 +440,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div></div>
       </div>
 
-      <!-- Requests -->
-      <div class="admin-panel" id="panel-requests">
-        <div class="panel-header">
-          <div><div class="panel-title">Leave Requests</div><div class="panel-sub mono">Approve or reject</div></div>
-        </div>
-        <div class="req-list" id="reqList"></div>
-      </div>
+      <!-- Leave Requests panel removed -->
 
       <!-- Settings -->
       <div class="admin-panel" id="panel-settings">
@@ -455,11 +450,14 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="settings-grid">
           <div class="setting-card">
             <h3>⏱ Configure</h3>
-            <div class="field"><label>Hours Per Day</label><input type="number" id="setWorkHours" min="1" max="24" step="0.5" placeholder="9"/></div>
-            <div class="field"><label>Start Time</label><input type="time" id="setStart"/></div>
-            <div class="field"><label>End Time</label><input type="time" id="setEnd"/></div>
+            <div class="field"><label>Hours Per Day</label><input type="number" id="setWorkHours" min="1" max="24" step="0.5" placeholder="8"/></div>
+            <div class="field"><label>Session 1 Start</label><input type="time" id="setStart"/></div>
+            <div class="field"><label>Session 1 End</label><input type="time" id="setS1End"/></div>
+            <div class="field"><label>Session 2 Start</label><input type="time" id="setS2Start"/></div>
+            <div class="field"><label>Shift End Time</label><input type="time" id="setEnd"/></div>
             <div class="field"><label>Grace (mins)</label><input type="number" id="setGrace" min="0" max="60" placeholder="15"/></div>
             <div class="field"><label>Break (mins)</label><input type="number" id="setBreak" min="0" max="120" placeholder="45"/></div>
+            <div class="field"><label>Admin Phone (for notifications)</label><input type="tel" id="setAdminPhone" placeholder="+91XXXXXXXXXX"/></div>
             <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
           </div>
           <div class="setting-card">
@@ -478,7 +476,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
           <div class="export-btns">
             <button class="btn-export" onclick="exportCSV('attendance')">📄 Attendance CSV</button>
             <button class="btn-export" onclick="exportCSV('employees')">👥 Employee List CSV</button>
-            <button class="btn-export" onclick="exportCSV('leaves')">🗓 Leave Requests CSV</button>
           </div>
         </div>
       </div>
@@ -515,6 +512,11 @@ async function api(method,path,data){
 
 let session={},pollInterval=null,settings={};
 
+// ── Admin session persistence (survives F5, cleared on tab close) ──
+function saveAdminSession(){if(session&&session.username)sessionStorage.setItem('wt_admin',JSON.stringify(session));}
+function restoreAdminSession(){try{const r=sessionStorage.getItem('wt_admin');if(r){session=JSON.parse(r);return true;}}catch(e){}return false;}
+function clearAdminSession(){sessionStorage.removeItem('wt_admin');session={};}
+
 // ── Sidebar ──────────────────────────────────────────────
 function toggleSidebar(){
   const sb=document.getElementById('sidebar');
@@ -537,10 +539,18 @@ async function doLogin(){
   const password=document.getElementById('aPass').value.trim();
   const err=document.getElementById('loginError');err.style.display='none';
   const res=await api('POST','/api/auth/admin',{username,password});
-  if(res.ok){session={name:res.name,username:res.username};showScreen('adminScreen');initAdmin();}
+  if(res.ok){session={name:res.name,username:res.username};saveAdminSession();showScreen('adminScreen');initAdmin();}
   else err.style.display='block';
 }
-function doLogout(){clearInterval(pollInterval);session={};showScreen('loginScreen');document.getElementById('aUser').value='';document.getElementById('aPass').value='';}
+function doLogout(){clearInterval(pollInterval);clearAdminSession();showScreen('loginScreen');document.getElementById('aUser').value='';document.getElementById('aPass').value='';}
+
+// ── Auto-restore admin session on refresh ──────────────────
+(function bootAdmin(){
+  if(restoreAdminSession()&&session.username){
+    showScreen('adminScreen');
+    initAdmin();
+  }
+})();
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.remove('active','visible-section');
@@ -577,16 +587,20 @@ async function loadSettings(){
     document.getElementById('setEnd').value=s.endTime;
     document.getElementById('setGrace').value=s.graceMins;
     document.getElementById('setBreak').value=s.breakMins||45;
+    if(document.getElementById('setS1End'))document.getElementById('setS1End').value=s.session1End||'13:30';
+    if(document.getElementById('setS2Start'))document.getElementById('setS2Start').value=s.session2Start||'14:15';
+    if(document.getElementById('setAdminPhone'))document.getElementById('setAdminPhone').value=s.adminPhone||'';
     document.getElementById('currentSettings').innerHTML=
-      `Hours: <strong style="color:var(--accentL)">${s.workHours}h / day</strong><br>
-       Start: <strong style="color:var(--accentL)">${s.startTime}</strong><br>
-       End: <strong style="color:var(--accentL)">${s.endTime}</strong><br>
+      `<b style="color:var(--text)">8-Hour Shift</b><br>
+       S1: <strong style="color:var(--accentL)">${s.startTime} → ${s.session1End||'13:30'}</strong><br>
+       Break: <strong style="color:var(--accentL)">${s.breakMins||45} mins</strong><br>
+       S2: <strong style="color:var(--accentL)">${s.session2Start||'14:15'} → ${s.endTime}</strong><br>
        Grace: <strong style="color:var(--accentL)">${s.graceMins} mins</strong><br>
-       Break: <strong style="color:var(--accentL)">${s.breakMins||45} mins</strong>`;
+       Admin Phone: <strong style="color:var(--accentL)">${s.adminPhone||'(not set)'}</strong>`;
   }
 }
 async function saveSettings(){
-  const s={workHours:parseFloat(document.getElementById('setWorkHours').value)||9,startTime:document.getElementById('setStart').value||'09:30',endTime:document.getElementById('setEnd').value||'18:30',graceMins:parseInt(document.getElementById('setGrace').value)||15,breakMins:parseInt(document.getElementById('setBreak').value)||45};
+  const s={workHours:parseFloat(document.getElementById('setWorkHours').value)||8,startTime:document.getElementById('setStart').value||'09:30',endTime:document.getElementById('setEnd').value||'17:30',graceMins:parseInt(document.getElementById('setGrace').value)||15,breakMins:parseInt(document.getElementById('setBreak').value)||45,session1End:(document.getElementById('setS1End')||{}).value||'13:30',session2Start:(document.getElementById('setS2Start')||{}).value||'14:15',adminPhone:(document.getElementById('setAdminPhone')||{}).value||''};
   const res=await api('PUT','/api/settings',s);
   if(res.error){showToast('❌','Failed to save.');return;}
   settings=res;await loadSettings();showToast('✅','Settings saved!');
@@ -594,18 +608,18 @@ async function saveSettings(){
 
 // ── Refresh ───────────────────────────────────────────────
 async function refresh(){
-  const [emps,att,leaves,activity]=await Promise.all([api('GET','/api/employees'),api('GET','/api/attendance'),api('GET','/api/leaves'),api('GET','/api/activity')]);
+  const [emps,att,activity]=await Promise.all([api('GET','/api/employees'),api('GET','/api/attendance'),api('GET','/api/activity')]);
+  const leaves=[];
   if(!emps||emps.error)return;
   const today=new Date().toISOString().split('T')[0];
   const todayAtt=(att||[]).filter(a=>a.date===today);
   const present=todayAtt.filter(a=>a.status==='present'||a.status==='late').length;
   const late=todayAtt.filter(a=>a.status==='late').length;
-  const pending=(leaves||[]).filter(r=>r.status==='pending').length;
+  const halfDay=todayAtt.filter(a=>a.status==='half day').length;
   document.getElementById('s-present').textContent=present;
   document.getElementById('s-total').textContent=(emps||[]).length;
   document.getElementById('s-late').textContent=late;
-  document.getElementById('s-pending').textContent=pending;
-  document.getElementById('notifDot').style.display=pending>0?'inline-block':'none';
+  document.getElementById('s-pending').textContent=halfDay;
 
   document.getElementById('ovTable').innerHTML=(emps||[]).map(e=>{
     const r=todayAtt.find(a=>a.empId===e.id);
@@ -615,8 +629,8 @@ async function refresh(){
       sessLine=sessions.map((s,i)=>`<span style="font-family:'DM Mono',monospace;font-size:11px;">S${i+1}:${s.in||'—'}→${s.out||'…'}</span>`).join('<br>');
       if(sessions.length>=2&&sessions[1].lateNote)lateWarn=`<br><span style="color:var(--warn);font-size:10px;">⚠ ${sessions[1].lateNote}</span>`;
     }
-    const status=r?.status||'absent';
-    return`<tr><td><strong>${e.name}</strong><br><span style="color:var(--muted);font-size:10px;font-family:'DM Mono',monospace;">${e.id}</span></td><td>${sessLine}${lateWarn}</td><td class="td-mono" style="font-size:11px;">${r?.totalWork||'—'}</td><td><span class="att-badge badge-${status}">${status}</span></td></tr>`;
+    const status=r?.status||'absent';const sc2=status.replace(/\s+/g,'-');
+    return`<tr><td><strong>${e.name}</strong><br><span style="color:var(--muted);font-size:10px;font-family:'DM Mono',monospace;">${e.id}</span></td><td>${sessLine}${lateWarn}</td><td class="td-mono" style="font-size:11px;">${r?.totalWork||'—'}</td><td><span class="att-badge badge-${sc2}">${status}</span></td></tr>`;
   }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">No employees yet</td></tr>';
 
   const feed=document.getElementById('actFeed');
@@ -630,12 +644,10 @@ async function refresh(){
     const sessions=r.sessions||[];
     const sessLine=sessions.length?sessions.map((s,i)=>`S${i+1}:${s.in||'—'}→${s.out||'…'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
     const lateNote=(sessions.length>=2&&sessions[1].lateNote)?` ⚠ ${sessions[1].lateNote}`:'';
-    return`<tr><td class="td-mono" style="white-space:nowrap;">${r.date}</td><td>${r.name||r.empId}</td><td class="td-mono" style="font-size:11px;">${sessLine}${lateNote?`<br><span style="color:var(--warn);font-size:10px;">${lateNote}</span>`:''}</td><td class="td-mono" style="white-space:nowrap;">${r.totalWork||r.duration||'—'}</td><td><span class="att-badge badge-${r.status}">${r.status}</span></td></tr>`;
+    const sc=(r.status||'absent').replace(/\s+/g,'-');return`<tr><td class="td-mono" style="white-space:nowrap;">${r.date}</td><td>${r.name||r.empId}</td><td class="td-mono" style="font-size:11px;">${sessLine}${lateNote?`<br><span style="color:var(--warn);font-size:10px;">${lateNote}</span>`:''}</td><td class="td-mono" style="white-space:nowrap;">${r.totalWork||r.duration||'—'}</td><td><span class="att-badge badge-${sc}">${r.status}</span></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No records</td></tr>';
 
-  const rl=document.getElementById('reqList');
-  if(!(leaves||[]).length){rl.innerHTML='<p style="color:var(--muted);font-size:13px;">No leave requests.</p>';}
-  else rl.innerHTML=(leaves||[]).map(r=>`<div class="req-card ${r.status}"><div style="flex:1;min-width:0;"><div class="ri-name">${r.name} <span class="td-mono" style="font-size:10px;color:var(--muted)">${r.empId}</span></div><div class="ri-dates">${r.type} · ${r.from} → ${r.to}</div><div class="ri-reason">${r.reason}</div></div>${r.status==='pending'?`<div class="req-actions"><button class="btn btn-primary btn-sm" onclick="handleReq('${r.id}','approved')">✓</button><button class="btn btn-danger btn-sm" onclick="handleReq('${r.id}','rejected')">✕</button></div>`:`<span class="att-badge badge-${r.status==='approved'?'present':'absent'}">${r.status.toUpperCase()}</span>`}</div>`).join('');
+  // Leave panel removed
 }
 
 // ── Panel nav ─────────────────────────────────────────────
@@ -667,11 +679,7 @@ async function removeEmployee(id){
   await api('DELETE',`/api/employees/${encodeURIComponent(id)}`);
   await refresh();showToast('🗑️','Employee removed.');
 }
-async function handleReq(id,action){
-  const res=await api('PUT',`/api/leaves/${encodeURIComponent(id)}`,{status:action});
-  if(res.error){showToast('❌','Failed.');return;}
-  await refresh();showToast(action==='approved'?'✅':'❌',`Request ${action}.`);
-}
+// handleReq removed — leave approval disabled
 
 // ── Export ────────────────────────────────────────────────
 async function exportCSV(type){
@@ -679,7 +687,7 @@ async function exportCSV(type){
   let csv='',filename='';
   if(type==='attendance'){csv='Date,ID,Name,Sessions,Total,Status\n';(att||[]).forEach(r=>{const sess=r.sessions?r.sessions.map(s=>`${s.in}-${s.out||'--'}`).join('/'):`${r.checkIn||''}-${r.checkOut||''}`;csv+=`${r.date},${r.empId},${r.name||''},${sess},${r.totalWork||r.duration||''},${r.status}\n`;});filename='attendance.csv';}
   else if(type==='employees'){csv='ID,Name,Dept,Email\n';(emps||[]).forEach(e=>csv+=`${e.id},${e.name},${e.dept||''},${e.email||''}\n`);filename='employees.csv';}
-  else{csv='ID,Name,From,To,Type,Reason,Status,Applied\n';(leaves||[]).forEach(r=>csv+=`${r.id},${r.name},${r.from},${r.to},${r.type},"${r.reason}",${r.status},${r.applied}\n`);filename='leave_requests.csv';}
+  // Leave export removed
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
   showToast('📥','CSV exported.');

@@ -147,6 +147,7 @@ svg.ring{transform:rotate(-90deg);}
 .badge-late{background:rgba(255,107,53,.1);color:var(--warn);}
 .badge-holiday{background:rgba(168,85,247,.1);color:var(--holiday);}
 .badge-absent{background:rgba(255,56,96,.1);color:var(--danger);}
+.badge-half-day{background:rgba(255,107,53,.08);color:var(--warn);border:1px solid rgba(255,107,53,.25);}
 
 /* Leave form */
 .holiday-form .field{margin-bottom:12px;}
@@ -404,6 +405,7 @@ svg.ring{transform:rotate(-90deg);}
           <button class="btn btn-secondary" id="checkOutBtn" onclick="checkOut()" disabled>◼ Clock Out</button>
         </div>
         <div class="session-row" id="sessionChips"></div>
+        <div id="adminNoticeBox" style="margin-top:10px;"></div>
       </div>
     </div>
 
@@ -425,7 +427,7 @@ svg.ring{transform:rotate(-90deg);}
         <div class="timer-stats">
           <div class="stat-box"><div class="s-label">Session</div><div class="s-val" id="sessionLabel">1 of 2</div></div>
           <div class="stat-box"><div class="s-label">Remaining</div><div class="s-val" id="remainingTime">--:--</div></div>
-          <div class="stat-box"><div class="s-label">Target</div><div class="s-val" id="targetHours">9h</div></div>
+          <div class="stat-box"><div class="s-label">Target</div><div class="s-val" id="targetHours">8h</div></div>
           <div class="stat-box"><div class="s-label">Total</div><div class="s-val" id="totalToday">0h 00m</div></div>
         </div>
       </div>
@@ -439,29 +441,7 @@ svg.ring{transform:rotate(-90deg);}
       </div>
     </div>
 
-    <!-- TAB: Leave -->
-    <div class="tab-panel" id="tab-leave-1">
-      <div class="card">
-        <div class="card-title">Apply for Leave</div>
-        <div class="holiday-form">
-          <div class="field"><label>From Date</label><input type="date" id="hFrom"/></div>
-          <div class="field"><label>To Date</label><input type="date" id="hTo"/></div>
-          <div class="field">
-            <label>Leave Type</label>
-            <select id="hType"><option>Casual Leave</option><option>Sick Leave</option><option>Annual Leave</option><option>Emergency Leave</option></select>
-          </div>
-          <div class="field"><label>Reason</label><textarea id="hReason" placeholder="Briefly describe your reason..."></textarea></div>
-          <button class="leave-btn" onclick="submitLeave()">✈ Submit Leave Request</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-panel full-col" id="tab-leave-2">
-      <div class="card">
-        <div class="card-title">My Leave Requests</div>
-        <div class="req-list" id="myRequests"><p style="color:var(--muted);font-size:13px;">Loading...</p></div>
-      </div>
-    </div>
+    <!-- Leave: removed — call admin phone for leave requests -->
 
   </div><!-- /emp-content -->
 
@@ -475,10 +455,7 @@ svg.ring{transform:rotate(-90deg);}
       <span class="nav-icon">📋</span>
       <span class="nav-label">History</span>
     </button>
-    <button class="nav-item" id="nav-leave" onclick="switchTab('leave')">
-      <span class="nav-icon">✈️</span>
-      <span class="nav-label">Leave</span>
-    </button>
+
     <button class="nav-item" id="nav-logout" onclick="doLogout()">
       <span class="nav-icon">🚪</span>
       <span class="nav-label">Logout</span>
@@ -499,20 +476,38 @@ async function api(method,path,data){
   }catch(e){return{error:e.message};}
 }
 
-// ── State ──────────────────────────────────────────────────
-let session={},settings={workHours:9,startTime:'09:30',endTime:'18:30',graceMins:15};
+// ── State ────────────────────────────────────────────────────
+let session={},settings={workHours:8,startTime:'09:30',endTime:'17:30',graceMins:15,breakMins:45,session2Start:'14:15',adminPhone:''};
 let timerInterval=null,clockInterval=null,checkInTs=null;
 let sessionCount=0,totalWorkedSecs=0;
 const CIRC=402;
+
+// ══ SESSION PERSISTENCE (survives F5, lost on tab close) ══════
+function saveSession() {
+  if (session && session.empId) {
+    sessionStorage.setItem('wt_session', JSON.stringify(session));
+  }
+}
+function restoreSession() {
+  try {
+    const raw = sessionStorage.getItem('wt_session');
+    if (raw) { session = JSON.parse(raw); return true; }
+  } catch(e) {}
+  return false;
+}
+function clearSession() {
+  sessionStorage.removeItem('wt_session');
+  session = {};
+}
+
 
 // ── Tab switching (mobile) ──────────────────────────────────
 function switchTab(tab){
   // toggle panels
   const homeIds=['tab-home-1','tab-home-2'];
   const histIds=['tab-history'];
-  const leaveIds=['tab-leave-1','tab-leave-2'];
-  const allPanels=[...homeIds,...histIds,...leaveIds];
-  const show = tab==='home'?homeIds:tab==='history'?histIds:leaveIds;
+  const allPanels=[...homeIds,...histIds];
+  const show = tab==='home'?homeIds:histIds;
   allPanels.forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.classList.toggle('active',show.includes(id));
@@ -530,7 +525,15 @@ async function checkServer(){
   if(s&&!s.error){settings=s;dot.className='s-dot online';st.textContent='Server online ✓';}
   else{dot.className='s-dot offline';st.textContent='Server offline';}
 }
-checkServer();
+// ── Auto-restore session on page refresh ────────────────────
+(async function bootApp() {
+  await checkServer();
+  if (restoreSession() && session.empId) {
+    // Silently re-enter dashboard without re-login
+    showScreen('empScreen');
+    await initDashboard();
+  }
+})();
 
 // ── Login / Logout ──────────────────────────────────────────
 async function doLogin(){
@@ -541,12 +544,13 @@ async function doLogin(){
   const res=await api('POST','/api/auth/employee',{empId,password});
   if(res.ok){
     session={empId:res.emp.id,name:res.emp.name,dept:res.emp.dept};
+    saveSession();
     showScreen('empScreen');initDashboard();
   }else{err.textContent=res.error||'Invalid credentials.';err.style.display='block';}
 }
 function doLogout(){
   clearInterval(timerInterval);clearInterval(clockInterval);
-  session={};checkInTs=null;sessionCount=0;totalWorkedSecs=0;
+  clearSession();checkInTs=null;sessionCount=0;totalWorkedSecs=0;
   showScreen('loginScreen');
   document.getElementById('loginId').value='';document.getElementById('loginPass').value='';
   checkServer();
@@ -575,8 +579,7 @@ async function initDashboard(){
   document.getElementById('targetHours').textContent=settings.workHours+'h';
   startClock();
   await loadHistoryAndState();
-  loadLeaves();
-  setInterval(loadLeaves,30000);
+  // Leave feature removed
   // show logout on desktop
   document.getElementById('logoutBtn').style.display='';
 }
@@ -613,19 +616,33 @@ async function checkIn(){
   if(sessionCount>=2){showToast('⚠️','Already completed 2 sessions');return;}
   if(checkInTs){showToast('⚠️','Already clocked in!');return;}
   const now=new Date(),checkInStr=now.toTimeString().slice(0,5);
-  const [sh,sm]=settings.startTime.split(':').map(Number);
-  const nowMin=now.getHours()*60+now.getMinutes();
-  const status=sessionCount===0?(nowMin<=sh*60+sm+settings.graceMins?'present':'late'):'present';
-  const res=await api('POST','/api/checkin',{empId:session.empId,name:session.name,checkIn:checkInStr,status});
+  const res=await api('POST','/api/checkin',{empId:session.empId,name:session.name,checkIn:checkInStr});
   if(res.error){showToast('❌',res.error);return;}
   checkInTs=now;sessionCount++;
   document.getElementById('checkInBtn').disabled=true;
   document.getElementById('checkOutBtn').disabled=false;
   document.getElementById('sessionLabel').textContent=`${sessionCount} of 2`;
   updateSessionChips(res.rec);startTimer();
-  if(res.lateMsg)showToast('⚠️',res.lateMsg);
-  else if(sessionCount===2)showToast('✅',`Session 2 started at ${checkInStr}`);
-  else showToast('✅',`Clocked in at ${checkInStr}${status==='late'?' (Late)':''}`);
+
+  // ── Admin clock-in notification (phone link) ─────────────
+  const phone=res.adminPhone||settings.adminPhone||'';
+  const nb=document.getElementById('adminNoticeBox');
+  if(res.isLate){
+    const sl=res.sessionIndex===0?'Session 1':'Session 2';
+    let html=`<div class="emp-notice warn">⚠ Late ${sl} check-in!`;
+    if(phone) html+=` <a href="tel:${phone}" style="color:var(--warn);font-weight:700;">📞 Notify Admin</a>`;
+    html+='</div>';
+    nb.innerHTML=html;
+    showToast('⚠️',`Late ${sl} – ${res.lateNote||checkInStr}`);
+  } else {
+    let html='<div class="emp-notice default">✅ Clocked in on time.';
+    if(phone) html+=` <a href="tel:${phone}" style="color:var(--accentL);font-size:11px;opacity:.8;text-decoration:none;">📞 Admin</a>`;
+    html+='</div>';
+    nb.innerHTML=html;
+    setTimeout(()=>{if(nb)nb.innerHTML='';},5000);
+    if(sessionCount===2) showToast('✅',`Session 2 started at ${checkInStr}`);
+    else showToast('✅',`Clocked in at ${checkInStr}`);
+  }
 }
 
 // ── Clock Out ───────────────────────────────────────────────
@@ -694,7 +711,7 @@ async function loadHistoryAndState(){
     el.innerHTML=sorted.map(r=>{
       const st=r.sessions?r.sessions.map(s=>`${s.in}→${s.out||'--'}`).join(' | '):`${r.checkIn||'—'}→${r.checkOut||'—'}`;
       const tot=r.totalWork||r.duration||'—';
-      return`<div class="att-row"><span class="att-date">${r.date}</span><span class="att-sessions">${st}</span><span style="font-family:'DM Mono',monospace;font-size:11px;">${tot}</span><span class="att-badge badge-${r.status||'absent'}">${r.status||'absent'}</span></div>`;
+      const sc=(r.status||'absent').replace(/\s+/g,'-');return`<div class="att-row"><span class="att-date">${r.date}</span><span class="att-sessions">${st}</span><span style="font-family:'DM Mono',monospace;font-size:11px;">${tot}</span><span class="att-badge badge-${sc}">${r.status||'absent'}</span></div>`;
     }).join('');
   }
   const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
@@ -720,26 +737,9 @@ async function loadHistoryAndState(){
   }
 }
 
-// ── Leaves ──────────────────────────────────────────────────
-async function loadLeaves(){
-  const res=await api('GET',`/api/leaves/${session.empId}`);
-  const reqs=Array.isArray(res)?res:[];
-  const el=document.getElementById('myRequests');
-  if(!reqs.length){el.innerHTML='<p style="color:var(--muted);font-size:13px;">No leave requests.</p>';return;}
-  el.innerHTML=reqs.map(r=>`<div class="req-card ${r.status}"><div><div class="ri-name">${r.type}</div><div class="ri-dates">${r.from} → ${r.to}</div><div class="ri-reason">${r.reason}</div></div><span class="att-badge badge-${r.status||'holiday'}">${(r.status||'pending').toUpperCase()}</span></div>`).join('');
-}
-async function submitLeave(){
-  const from=document.getElementById('hFrom').value,to=document.getElementById('hTo').value;
-  const type=document.getElementById('hType').value,reason=document.getElementById('hReason').value.trim();
-  if(!from||!to||!reason){showToast('⚠️','Fill all fields.');return;}
-  const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
-  const res=await api('POST','/api/leaves',{id:'REQ'+Date.now(),empId:session.empId,name:session.name,from,to,type,reason,status:'pending',applied:d.toISOString().split('T')[0]});
-  if(res.error){showToast('❌','Server error.');return;}
-  document.getElementById('hFrom').value='';document.getElementById('hTo').value='';document.getElementById('hReason').value='';
-  loadLeaves();showToast('✈️','Leave submitted! Awaiting approval.');
-  // switch to my requests on mobile
-  if(window.innerWidth<768)switchTab('leave');
-}
+// Leave feature removed — call admin directly
+function loadLeaves(){}
+function submitLeave(){}
 
 // ── Toast ────────────────────────────────────────────────────
 let toastTimer;
